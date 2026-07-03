@@ -2,6 +2,10 @@ import Link from "next/link";
 
 const privacySections = [
   {
+    title: "Data Policy And No Sale Of Data",
+    body: "We do not sell, rent, or trade your personal data. DomiVault collects and stores only the information needed to provide the product, sync your account, secure access, process subscriptions, support exports, and improve reliability. We do not use uploaded receipts, warranties, home records, vehicle records, or OCR text for advertising profiling.",
+  },
+  {
     title: "Information You Add To DomiVault",
     body: "DomiVault stores the home, maintenance, expense, appliance, vendor, vehicle, receipt, warranty, and document records you choose to create or upload. This may include document names, OCR text, dates, amounts, vendor details, notes, reminders, profile settings, and uploaded files.",
   },
@@ -19,15 +23,27 @@ const privacySections = [
   },
   {
     title: "Data Sharing",
-    body: "We do not sell user data. We may process data through service providers that help run DomiVault, including Supabase for secure auth, database, and storage infrastructure, and RevenueCat for subscription access, billing state, and purchase entitlement management.",
+    body: "We do not sell user data. We share data only when needed to operate DomiVault, comply with law, protect the service, or work with trusted service providers. Those providers include Supabase for secure auth, database, and storage infrastructure, and RevenueCat for subscription access, billing state, and purchase entitlement management.",
   },
   {
     title: "Your Controls",
     body: "You can edit many profile and record details in the app, download/export available reports, and delete supported records or documents. Some deletion requests may require support if a record is tied to billing, security logs, backups, or legal retention requirements.",
   },
   {
+    title: "Account Deletion And Export Requests",
+    body: "You may request deletion of your account data or export supported records through available app controls or support channels. Deleted files and records are removed from active systems where supported, but limited copies may remain temporarily in backups, security logs, payment records, or legal compliance records.",
+  },
+  {
+    title: "Legal Requests And Safety",
+    body: "We may access, preserve, or disclose account information if required by law, to respond to valid legal requests, to enforce our terms, or to protect DomiVault, users, and the public from fraud, abuse, security threats, or illegal activity.",
+  },
+  {
     title: "Retention",
     body: "We keep account records for as long as your account is active or as needed to provide DomiVault. Deleted documents should be removed from active storage and related vault metadata, subject to normal backup and operational retention windows.",
+  },
+  {
+    title: "Dispute Terms",
+    body: "Dispute resolution terms, including arbitration where permitted by law, are described in the DomiVault Terms of Service.",
   },
   {
     title: "Children's Privacy",

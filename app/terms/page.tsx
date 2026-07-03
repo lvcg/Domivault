@@ -38,6 +38,10 @@ const termsSections = [
     body: "Your use of DomiVault is also governed by the Privacy and Data Policy. We do not sell your data, and synced app records are stored using Supabase-backed authentication, database, and storage infrastructure.",
   },
   {
+    title: "Dispute Resolution And Arbitration",
+    body: "Before filing a claim, you and DomiVault agree to try to resolve disputes informally by contacting support with a clear description of the issue. If a dispute cannot be resolved informally, any claim arising from or relating to DomiVault, these terms, or the service will be resolved by binding arbitration on an individual basis to the fullest extent permitted by law, except that either party may bring qualifying claims in small claims court or seek injunctive relief for misuse, security issues, or intellectual property violations. You and DomiVault waive the right to a jury trial and to participate in class, collective, consolidated, or representative actions to the fullest extent permitted by law. Nothing in this section limits rights that cannot be waived under applicable law.",
+  },
+  {
     title: "Changes To These Terms",
     body: "We may update these terms as DomiVault evolves. Continued use of the app after updated terms are posted means you accept the updated terms.",
   },
