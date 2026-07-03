@@ -77,12 +77,6 @@ export default function TermsPage() {
           ))}
         </section>
 
-        <section className="rounded-3xl border border-amber-200 bg-amber-50 p-5 text-sm leading-7 text-amber-950 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-50">
-          <h2 className="text-lg font-semibold">Production Note</h2>
-          <p className="mt-2">
-            These terms are a strong product draft, but DomiVault should have lawyer-reviewed terms before a full public launch, especially once paid subscriptions, refunds, support obligations, and payment processors are active.
-          </p>
-        </section>
       </div>
     </main>
   );
