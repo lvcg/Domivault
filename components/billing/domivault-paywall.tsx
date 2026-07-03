@@ -194,9 +194,6 @@ export function DomiVaultPaywall() {
           </p>
         )}
 
-        <p className="mt-4 text-xs leading-5 text-slate-500 dark:text-slate-400">
-          Purchases are processed with RevenueCat Web Billing. Plus access is finalized by server-side webhook state and Supabase policies.
-        </p>
         <div ref={checkoutTargetRef} />
       </div>
     </section>

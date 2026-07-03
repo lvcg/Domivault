@@ -12,7 +12,7 @@ type RevenueCatUpgradeButtonProps = {
 
 export function RevenueCatUpgradeButton({
   className,
-  label = "Upgrade to DomiVault Plus",
+  label = "Upgrade to Plus",
   showStatus = false,
 }: RevenueCatUpgradeButtonProps) {
   const {
@@ -47,7 +47,7 @@ export function RevenueCatUpgradeButton({
         onClick={handleClick}
         type="button"
         className={cn(
-          "inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950",
+          "inline-flex h-10 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-slate-950 px-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950 sm:px-4",
           className,
         )}
       >

@@ -166,8 +166,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500 text-white">
               <ShieldCheck className="h-5 w-5" />
             </div>
-            <p className="font-semibold">Private by design</p>
-            <p className="mt-1 leading-6 opacity-80">Secure account rules keep every home, project, bill, and receipt scoped to its owner.</p>
+            <p className="font-semibold">Your records stay yours</p>
+            <p className="mt-1 leading-6 opacity-80">DomiVault keeps your home, vehicle, expense, and document records tied to your secure account.</p>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-3 px-2 text-xs font-semibold text-slate-500 dark:text-slate-400">

@@ -10,7 +10,7 @@ type PremiumLockProps = {
   children?: React.ReactNode;
 };
 
-export function PremiumLock({ title, description, cta = "Upgrade to DomiVault Plus", href = "/plus", children }: PremiumLockProps) {
+export function PremiumLock({ title, description, cta = "Upgrade to Plus", href = "/plus", children }: PremiumLockProps) {
   return (
     <section className="relative overflow-hidden rounded-3xl border border-amber-200 bg-amber-50/80 p-5 shadow-sm dark:border-amber-300/20 dark:bg-amber-300/10">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

@@ -29,7 +29,7 @@ function downloadBlob(filename: string, content: BlobPart, type: string) {
 }
 
 export function ExportReportPanel() {
-  const [notice, setNotice] = useState("Exports are verified server-side as a DomiVault Plus feature.");
+  const [notice, setNotice] = useState("Choose a report format to create your export.");
   const [isExporting, setIsExporting] = useState("");
 
   const exportReport = async (report: string, format: "csv" | "pdf") => {
