@@ -1,0 +1,123 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Package } from "@revenuecat/purchases-js";
+import { createClient } from "@/lib/supabase/client";
+import {
+  checkUserPremiumStatus,
+  fetchRevenueCatOfferings,
+  purchaseDomiVaultPlus,
+  type PremiumStatus,
+} from "@/lib/revenuecat-purchases";
+
+type RevenueCatPremiumState = {
+  appUserId: string | null;
+  email: string | null;
+  error: string | null;
+  isLoading: boolean;
+  isPremium: boolean;
+  isPurchasing: boolean;
+  managementURL: string | null;
+  packages: Package[];
+  status: PremiumStatus | null;
+};
+
+export function useRevenueCatPremium() {
+  const supabase = useMemo(() => createClient(), []);
+  const checkoutTargetRef = useRef<HTMLDivElement | null>(null);
+  const [state, setState] = useState<RevenueCatPremiumState>({
+    appUserId: null,
+    email: null,
+    error: null,
+    isLoading: true,
+    isPremium: false,
+    isPurchasing: false,
+    managementURL: null,
+    packages: [],
+    status: null,
+  });
+
+  const loadRevenueCatState = useCallback(async () => {
+    setState((current) => ({ ...current, error: null, isLoading: true }));
+
+    try {
+      const { data } = await supabase?.auth.getSession() ?? { data: { session: null } };
+      const user = data.session?.user;
+      const appUserId = user?.id || null;
+      const email = user?.email || null;
+      const [status, offeringState] = await Promise.all([
+        checkUserPremiumStatus({ appUserId, email }),
+        fetchRevenueCatOfferings({ appUserId, email }),
+      ]);
+
+      setState((current) => ({
+        ...current,
+        appUserId: status.appUserId,
+        email,
+        error: null,
+        isLoading: false,
+        isPremium: status.isPremium,
+        managementURL: status.managementURL,
+        packages: offeringState.packages,
+        status,
+      }));
+    } catch (error) {
+      setState((current) => ({
+        ...current,
+        error: error instanceof Error ? error.message : "Could not load DomiVault Plus status.",
+        isLoading: false,
+      }));
+    }
+  }, [supabase]);
+
+  useEffect(() => {
+    loadRevenueCatState();
+  }, [loadRevenueCatState]);
+
+  const upgrade = useCallback(async (packageToPurchase?: Package | null) => {
+    setState((current) => ({ ...current, error: null, isPurchasing: true }));
+
+    const result = await purchaseDomiVaultPlus({
+      appUserId: state.appUserId,
+      email: state.email,
+      htmlTarget: checkoutTargetRef.current,
+      packageToPurchase,
+    });
+
+    if (!result.ok) {
+      setState((current) => ({
+        ...current,
+        error: result.cancelled ? null : result.message,
+        isPurchasing: false,
+      }));
+      return result;
+    }
+
+    setState((current) => ({
+      ...current,
+      error: null,
+      isPremium: result.premiumStatus.isPremium,
+      isPurchasing: false,
+      managementURL: result.premiumStatus.managementURL,
+      status: result.premiumStatus,
+    }));
+
+    return result;
+  }, [state.appUserId, state.email]);
+
+  const openManagementPortal = useCallback(() => {
+    if (state.managementURL) {
+      window.open(state.managementURL, "_blank", "noopener,noreferrer");
+    }
+  }, [state.managementURL]);
+
+  return {
+    ...state,
+    checkoutTargetRef,
+    monthlyPackage: state.packages.find((item) => item.identifier === "$rc_monthly") || state.packages[0] || null,
+    annualPackage: state.packages.find((item) => item.identifier === "$rc_annual") || null,
+    openManagementPortal,
+    refresh: loadRevenueCatState,
+    upgrade,
+  };
+}

@@ -26,6 +26,12 @@ const plusEvents = new Set([
 ]);
 
 const freeEvents = new Set(["EXPIRATION"]);
+const premiumEntitlementId = process.env.NEXT_PUBLIC_REVENUECAT_ENTITLEMENT_ID || "premium_access";
+
+function eventIncludesPremiumEntitlement(event: RevenueCatEvent) {
+  const entitlementIds = new Set([event.entitlement_id, ...(event.entitlement_ids || [])].filter(Boolean));
+  return entitlementIds.size === 0 || entitlementIds.has(premiumEntitlementId);
+}
 
 function verifyAuthorization(request: Request, rawBody: string) {
   const authToken = process.env.REVENUECAT_WEBHOOK_AUTH_TOKEN;
@@ -94,6 +100,10 @@ export async function POST(request: Request) {
 
   if (!event || !appUserId) {
     return NextResponse.json({ message: "RevenueCat event missing app_user_id." }, { status: 400 });
+  }
+
+  if (!eventIncludesPremiumEntitlement(event)) {
+    return NextResponse.json({ ok: true, ignored: `Non-${premiumEntitlementId} entitlement event.` });
   }
 
   const nextPlanTier = plusEvents.has(eventType) ? "vault_plus" : freeEvents.has(eventType) ? "free" : null;

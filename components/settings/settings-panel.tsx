@@ -5,7 +5,6 @@ import { Bell, CalendarDays, Home, Mail, Moon, Save, Trash2 } from "lucide-react
 import { createClient } from "@/lib/supabase/client";
 import type { PlanTier, ReminderChannel } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
-import { hasRevenueCatPurchaseLink } from "@/lib/revenuecat";
 import { RevenueCatUpgradeButton } from "@/components/billing/revenuecat-upgrade-button";
 
 type SettingsState = {
@@ -59,7 +58,6 @@ function saveLocalSettings(settings: SettingsState, savedAt?: string) {
 
 export function SettingsPanel() {
   const supabase = useMemo(() => createClient(), []);
-  const revenueCatReady = hasRevenueCatPurchaseLink();
   const [settings, setSettings] = useState<SettingsState>(defaultSettings);
   const [message, setMessage] = useState("Login to sync settings to your secure account.");
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
@@ -296,12 +294,9 @@ export function SettingsPanel() {
           <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
             Free includes core home records. Plus unlocks warranty tracking, receipt storage, maintenance history, Google Calendar sync, vehicle repair records, expiration alerts, and export reports. Plan changes are controlled by RevenueCat billing and are not editable from profile settings.
           </p>
-          {!revenueCatReady && (
-            <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-950 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-50">
-              Add <span className="font-semibold">NEXT_PUBLIC_REVENUECAT_PURCHASE_LINK</span> to your hosting environment after creating the RevenueCat Web Purchase Link.
-            </p>
-          )}
-          <RevenueCatUpgradeButton className="mt-4 h-11 rounded-2xl px-5" label="Upgrade with RevenueCat" />
+          <div className="mt-4">
+            <RevenueCatUpgradeButton className="h-11 rounded-2xl px-5" label="Upgrade with RevenueCat" showStatus />
+          </div>
         </div>
 
         <div className="xl:col-span-2 grid gap-3 rounded-3xl border border-slate-200/70 bg-white/85 p-4 text-sm shadow-sm dark:border-white/10 dark:bg-white/[0.05] md:grid-cols-2">

@@ -1,61 +1,65 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Sparkles } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { createRevenueCatPurchaseUrl, hasRevenueCatPurchaseLink } from "@/lib/revenuecat";
+import { useRevenueCatPremium } from "@/hooks/use-revenuecat-premium";
 
 type RevenueCatUpgradeButtonProps = {
   className?: string;
   label?: string;
-  fallbackHref?: string;
+  showStatus?: boolean;
 };
 
 export function RevenueCatUpgradeButton({
   className,
   label = "Upgrade to DomiVault Plus",
-  fallbackHref = "/plus",
+  showStatus = false,
 }: RevenueCatUpgradeButtonProps) {
-  const supabase = useMemo(() => createClient(), []);
-  const [href, setHref] = useState(fallbackHref);
+  const {
+    annualPackage,
+    checkoutTargetRef,
+    error,
+    isLoading,
+    isPremium,
+    isPurchasing,
+    managementURL,
+    monthlyPackage,
+    openManagementPortal,
+    upgrade,
+  } = useRevenueCatPremium();
+  const isBusy = isLoading || isPurchasing;
+  const selectedPackage = annualPackage || monthlyPackage;
+  const buttonLabel = isPremium ? "Manage DomiVault Plus" : label;
 
-  useEffect(() => {
-    if (!hasRevenueCatPurchaseLink()) {
-      setHref(fallbackHref);
+  const handleClick = async () => {
+    if (isPremium && managementURL) {
+      openManagementPortal();
       return;
     }
 
-    let isMounted = true;
-
-    async function loadPurchaseLink() {
-      const { data } = await supabase?.auth.getSession() ?? { data: { session: null } };
-      const user = data.session?.user;
-      const nextHref = createRevenueCatPurchaseUrl({
-        appUserId: user?.id,
-        email: user?.email,
-      });
-
-      if (isMounted) setHref(nextHref);
-    }
-
-    loadPurchaseLink();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [fallbackHref, supabase]);
+    await upgrade(selectedPackage);
+  };
 
   return (
-    <a
-      href={href}
-      className={cn(
-        "inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950",
-        className,
+    <div className="grid gap-2">
+      <button
+        disabled={isBusy}
+        onClick={handleClick}
+        type="button"
+        className={cn(
+          "inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950",
+          className,
+        )}
+      >
+        {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+        {isLoading ? "Checking Plus..." : isPurchasing ? "Opening checkout..." : buttonLabel}
+      </button>
+      {showStatus && (
+        <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
+          {isPremium ? "DomiVault Plus is active." : error || "RevenueCat checkout uses the premium_access entitlement."}
+        </div>
       )}
-    >
-      <Sparkles className="h-4 w-4" />
-      {label}
-    </a>
+      <div ref={checkoutTargetRef} />
+    </div>
   );
 }

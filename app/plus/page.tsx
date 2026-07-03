@@ -67,7 +67,7 @@ export default function PlusPage() {
             DomiVault helps homeowners keep receipts, warranties, maintenance records, and repair history organized before they need them.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <RevenueCatUpgradeButton className="h-12 rounded-2xl px-5" />
+            <RevenueCatUpgradeButton className="h-12 rounded-2xl px-5" showStatus />
             <Link href="/dashboard" className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
               Continue with Free
             </Link>

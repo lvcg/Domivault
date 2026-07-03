@@ -39,7 +39,8 @@ TESSERACT_LANG
 RevenueCat paid plan variables:
 
 ```text
-NEXT_PUBLIC_REVENUECAT_PURCHASE_LINK
+NEXT_PUBLIC_REVENUECAT_API_KEY
+NEXT_PUBLIC_REVENUECAT_ENTITLEMENT_ID
 REVENUECAT_WEBHOOK_AUTH_TOKEN
 REVENUECAT_WEBHOOK_SIGNING_SECRET
 ```
@@ -57,13 +58,14 @@ The database now enforces `vault_plus` before document rows and storage uploads 
 Recommended flow:
 
 1. Create a RevenueCat project for DomiVault.
-2. Create a `vault_plus` entitlement.
-3. Create DomiVault Plus monthly/yearly products and attach them to `vault_plus`.
-4. Create an offering and a hosted Web Purchase Link.
-5. Add the production purchase link to `NEXT_PUBLIC_REVENUECAT_PURCHASE_LINK`.
-6. Configure a RevenueCat webhook to `/api/billing/revenuecat`.
-7. Update `profiles.plan_tier` only from the webhook or a trusted admin action.
-8. Never let the browser directly upgrade its own plan.
+2. Create a `premium_access` entitlement.
+3. Create DomiVault Plus monthly/yearly products and attach them to `premium_access`.
+4. Create an offering, add the packages, and mark it as current.
+5. Add the public Web SDK API key to `NEXT_PUBLIC_REVENUECAT_API_KEY`.
+6. Add `NEXT_PUBLIC_REVENUECAT_ENTITLEMENT_ID=premium_access`.
+7. Configure a RevenueCat webhook to `/api/billing/revenuecat`.
+8. Update `profiles.plan_tier` only from the webhook or a trusted admin action.
+9. Never let the browser directly upgrade its own plan.
 
 ## QA Checklist
 

@@ -66,21 +66,22 @@ The public `/plus` page explains the current DomiVault Plus value proposition:
 
 ## RevenueCat Billing Startup Path
 
-DomiVault is set up to start with RevenueCat Web Purchase Links. This is the fastest billing path because the app can send logged-in users to a hosted RevenueCat checkout while keeping Plus access controlled by `profiles.plan_tier`.
+DomiVault is set up with the RevenueCat `@revenuecat/purchases-js` SDK for browser checkout and entitlement checks. The SDK checks the `premium_access` entitlement, fetches the current offering, purchases the selected package, and refreshes premium state after checkout.
 
 Recommended RevenueCat setup:
 
 1. Create a RevenueCat project named `DomiVault`.
-2. Create one entitlement named `vault_plus`.
+2. Create one entitlement named `premium_access`.
 3. Create monthly and yearly DomiVault Plus products.
-4. Attach both products to the `vault_plus` entitlement.
+4. Attach both products to the `premium_access` entitlement.
 5. Create an offering for the Plus products.
-6. Create a hosted Web Purchase Link in RevenueCat Funnels.
-7. Add the production purchase link to Vercel as `NEXT_PUBLIC_REVENUECAT_PURCHASE_LINK`.
-8. Configure RevenueCat webhooks to `https://your-domain.com/api/billing/revenuecat`.
-9. Add `REVENUECAT_WEBHOOK_AUTH_TOKEN` and/or `REVENUECAT_WEBHOOK_SIGNING_SECRET` to Vercel.
+6. Mark that offering as current.
+7. Add the public Web SDK API key to Vercel as `NEXT_PUBLIC_REVENUECAT_API_KEY`.
+8. Add `NEXT_PUBLIC_REVENUECAT_ENTITLEMENT_ID=premium_access`.
+9. Configure RevenueCat webhooks to `https://your-domain.com/api/billing/revenuecat`.
+10. Add `REVENUECAT_WEBHOOK_AUTH_TOKEN` and/or `REVENUECAT_WEBHOOK_SIGNING_SECRET` to Vercel.
 
-The Settings page appends the Supabase user id to the RevenueCat purchase link so purchases can be associated with the signed-in DomiVault account.
+The RevenueCat SDK uses the Supabase user id for signed-in users. If no user is signed in, it generates and stores a RevenueCat anonymous app user id with `Purchases.generateRevenueCatAnonymousAppUserId()`.
 RevenueCat webhook events update billing fields on `profiles`, while a database trigger prevents normal browser clients from changing `plan_tier` or RevenueCat subscription fields directly.
 
 ## Tech Stack
@@ -156,7 +157,8 @@ Create `.env.local` in the project root:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-NEXT_PUBLIC_REVENUECAT_PURCHASE_LINK=https://pay.rev.cat/your_production_token
+NEXT_PUBLIC_REVENUECAT_API_KEY=test_xOKlmUuGRPMTjxxslhKaIbgdwEa
+NEXT_PUBLIC_REVENUECAT_ENTITLEMENT_ID=premium_access
 REVENUECAT_WEBHOOK_AUTH_TOKEN=your_revenuecat_webhook_auth_value
 REVENUECAT_WEBHOOK_SIGNING_SECRET=your_revenuecat_hmac_signing_secret
 ```
