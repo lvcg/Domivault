@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BellRing, CalendarCheck, Car, FileScan, FileText, LifeBuoy, Refrigerator, ShieldCheck } from "lucide-react";
-import { RevenueCatUpgradeButton } from "@/components/billing/revenuecat-upgrade-button";
+import { DomiVaultPaywall } from "@/components/billing/domivault-paywall";
 
 const plusFeatures = [
   {
@@ -58,21 +58,7 @@ export default function PlusPage() {
           </div>
         </nav>
 
-        <section className="rounded-[2rem] border border-slate-200/70 bg-white/85 p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.05] sm:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">DomiVault Plus</p>
-          <h1 className="mt-3 max-w-4xl text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-            Keep the records you will need before you need them.
-          </h1>
-          <p className="mt-4 max-w-3xl text-base leading-8 text-slate-500 dark:text-slate-400">
-            DomiVault helps homeowners keep receipts, warranties, maintenance records, and repair history organized before they need them.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <RevenueCatUpgradeButton className="h-12 rounded-2xl px-5" showStatus />
-            <Link href="/dashboard" className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
-              Continue with Free
-            </Link>
-          </div>
-        </section>
+        <DomiVaultPaywall />
 
         <section className="grid gap-4 md:grid-cols-2">
           {plusFeatures.map((feature) => (
