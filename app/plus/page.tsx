@@ -71,10 +71,6 @@ export default function PlusPage() {
             </article>
           ))}
         </section>
-
-        <section className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-sm leading-7 text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
-          Plus access is verified by billing state in your profile. The browser can show upgrade buttons, but server routes and Supabase policies decide which paid records can be created or exported.
-        </section>
       </div>
     </main>
   );
