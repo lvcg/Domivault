@@ -3,12 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Camera, FileImage, Loader2, RotateCcw, ScanLine, StopCircle } from "lucide-react";
 import { createWorker } from "tesseract.js";
+import { preprocessImageForOcr } from "@/lib/ocr/browser-image-preprocess";
+import { extractOcrFields, sanitizeOcrText, type OcrExtractedFields } from "@/lib/ocr/text-cleanup";
 
 type ScannerStatus = "isIdle" | "isCapturing" | "isProcessing" | "isSuccess" | "isError";
 
 type LegacyWorkerHooks = {
   loadLanguage?: (language: string) => Promise<unknown>;
   initialize?: (language: string) => Promise<unknown>;
+  setParameters?: (parameters: Record<string, string>) => Promise<unknown>;
   recognize: (image: File | Blob | HTMLCanvasElement) => Promise<{ data: { text: string } }>;
   terminate?: () => Promise<unknown>;
 };
@@ -28,6 +31,7 @@ export function ClientDocumentScanner() {
   const [status, setStatus] = useState<ScannerStatus>("isIdle");
   const [progress, setProgress] = useState(0);
   const [text, setText] = useState("");
+  const [extracted, setExtracted] = useState<OcrExtractedFields>({});
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -58,6 +62,7 @@ export function ClientDocumentScanner() {
     setStatus("isIdle");
     setProgress(0);
     setText("");
+    setExtracted({});
     setError("");
   };
 
@@ -85,8 +90,19 @@ export function ClientDocumentScanner() {
         await worker.initialize("eng");
       }
 
-      const result = await worker.recognize(image);
-      setText(result.data.text.trim());
+      if (typeof worker.setParameters === "function") {
+        await worker.setParameters({
+          preserve_interword_spaces: "1",
+          tessedit_pageseg_mode: "11",
+          tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$.,:/#@&%()+- ",
+        });
+      }
+
+      const preprocessed = await preprocessImageForOcr(image);
+      const result = await worker.recognize(preprocessed.image);
+      const cleanText = sanitizeOcrText(result.data.text);
+      setText(cleanText);
+      setExtracted(extractOcrFields(cleanText));
       setProgress(100);
       setStatus("isSuccess");
     } catch {
@@ -247,14 +263,33 @@ export function ClientDocumentScanner() {
       )}
 
       {(status === "isSuccess" || text) && (
-        <label className="mt-5 grid gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
-          Extracted text
-          <textarea
-            className="min-h-48 rounded-3xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-800 outline-none transition-all duration-200 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:focus:ring-emerald-400/10"
-            onChange={(event) => setText(event.target.value)}
-            value={text}
-          />
-        </label>
+        <div className="mt-5 grid gap-4">
+          {Object.keys(extracted).length > 0 && (
+            <div className="grid gap-2 rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm dark:border-emerald-400/20 dark:bg-emerald-400/10">
+              <p className="font-semibold text-emerald-900 dark:text-emerald-100">Detected fields</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {Object.entries(extracted).map(([key, value]) => (
+                  <div key={key} className="rounded-2xl bg-white/70 px-3 py-2 text-slate-700 dark:bg-white/10 dark:text-slate-200">
+                    <span className="font-semibold capitalize">{key.replace(/([A-Z])/g, " $1")}: </span>
+                    {value}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <label className="grid gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Cleaned extracted text
+            <textarea
+              className="min-h-48 rounded-3xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-800 outline-none transition-all duration-200 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:focus:ring-emerald-400/10"
+              onChange={(event) => {
+                const cleanText = sanitizeOcrText(event.target.value);
+                setText(event.target.value);
+                setExtracted(extractOcrFields(cleanText));
+              }}
+              value={text}
+            />
+          </label>
+        </div>
       )}
 
       <canvas aria-hidden="true" className="hidden" ref={canvasRef} />

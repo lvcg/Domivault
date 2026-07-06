@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { createWorker } from "tesseract.js";
+import { PSM, createWorker } from "tesseract.js";
 import { requireVaultPlus } from "@/lib/auth/server-plan";
+import { extractOcrFields, sanitizeOcrText } from "@/lib/ocr/text-cleanup";
 
 type OcrPayload = {
   text: string;
@@ -18,19 +19,6 @@ const textTypes = new Set([
   "text/xml",
 ]);
 
-function extractReceiptFields(text: string) {
-  const amountMatch = text.match(/(?:total|amount|paid|balance)\D{0,12}(\$?\s?\d{1,5}(?:,\d{3})*(?:\.\d{2})?)/i);
-  const dateMatch = text.match(/\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4}-\d{2}-\d{2})\b/);
-  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  const vendor = lines.find((line) => /[A-Za-z]/.test(line) && !/receipt|invoice|total/i.test(line));
-
-  return {
-    ...(vendor ? { vendor } : {}),
-    ...(amountMatch ? { amount: amountMatch[1].replace(/\s/g, "") } : {}),
-    ...(dateMatch ? { date: dateMatch[1] } : {}),
-  };
-}
-
 async function extractWithTesseract(file: File): Promise<OcrPayload> {
   const imageTypes = new Set(["image/bmp", "image/gif", "image/jpeg", "image/png", "image/tiff", "image/webp"]);
   const isImage = imageTypes.has(file.type) || file.name.match(/\.(bmp|gif|jpe?g|png|tiff?|webp)$/i);
@@ -44,17 +32,27 @@ async function extractWithTesseract(file: File): Promise<OcrPayload> {
   }
 
   const worker = await createWorker(process.env.TESSERACT_LANG || "eng");
-  const bytes = Buffer.from(await file.arrayBuffer());
-  const result = await worker.recognize(bytes);
-  await worker.terminate();
-  const text = result.data.text.trim();
 
-  return {
-    text,
-    status: text ? "processed" : "unavailable",
-    extracted: text ? extractReceiptFields(text) : undefined,
-    message: text ? "Tesseract OCR text extracted." : "Tesseract OCR completed but no text was detected.",
-  };
+  try {
+    await worker.setParameters?.({
+      preserve_interword_spaces: "1",
+      tessedit_pageseg_mode: PSM.SPARSE_TEXT,
+      tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$.,:/#@&%()+- ",
+    });
+
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const result = await worker.recognize(bytes);
+    const text = sanitizeOcrText(result.data.text);
+
+    return {
+      text,
+      status: text ? "processed" : "unavailable",
+      extracted: text ? extractOcrFields(text) : undefined,
+      message: text ? "Tesseract OCR text extracted and cleaned." : "Tesseract OCR completed but no text was detected.",
+    };
+  } finally {
+    await worker.terminate();
+  }
 }
 
 export async function POST(request: Request) {
@@ -73,11 +71,11 @@ export async function POST(request: Request) {
     }
 
     if (textTypes.has(file.type) || file.name.match(/\.(csv|json|md|txt|xml)$/i)) {
-      const text = (await file.text()).trim();
+      const text = sanitizeOcrText(await file.text());
       return NextResponse.json({
         text,
         status: text ? "processed" : "unavailable",
-        extracted: text ? extractReceiptFields(text) : undefined,
+        extracted: text ? extractOcrFields(text) : undefined,
         message: text ? "Text extracted from document." : "The document did not contain readable text.",
       } satisfies OcrPayload);
     }

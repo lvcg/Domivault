@@ -5,6 +5,7 @@ import { ClientDocumentScanner } from "./client-document-scanner";
 
 const mockLoadLanguage = jest.fn();
 const mockInitialize = jest.fn();
+const mockSetParameters = jest.fn();
 const mockRecognize = jest.fn();
 const mockTerminate = jest.fn();
 
@@ -42,6 +43,7 @@ describe("ClientDocumentScanner", () => {
       return {
         loadLanguage: mockLoadLanguage.mockResolvedValue(undefined),
         initialize: mockInitialize.mockResolvedValue(undefined),
+        setParameters: mockSetParameters.mockResolvedValue(undefined),
         recognize: mockRecognize,
         terminate: mockTerminate.mockResolvedValue(undefined),
       };
@@ -54,6 +56,7 @@ describe("ClientDocumentScanner", () => {
 
   it("processes an uploaded image file and renders editable OCR text", async () => {
     const user = userEvent.setup();
+    installCanvasMocks();
     const recognition = deferredRecognize();
     render(<ClientDocumentScanner />);
 
@@ -65,12 +68,13 @@ describe("ClientDocumentScanner", () => {
 
     recognition.resolve();
 
-    const textarea = await screen.findByLabelText("Extracted text");
+    const textarea = await screen.findByLabelText("Cleaned extracted text");
     expect(textarea).toHaveValue("Hello World from Mock OCR");
     expect(screen.getByText("Text extracted")).toBeInTheDocument();
     expect(createWorker).toHaveBeenCalledWith("eng", undefined, expect.objectContaining({ logger: expect.any(Function) }));
     expect(mockLoadLanguage).toHaveBeenCalledWith("eng");
     expect(mockInitialize).toHaveBeenCalledWith("eng");
+    expect(mockSetParameters).toHaveBeenCalledWith(expect.objectContaining({ tessedit_pageseg_mode: "11" }));
     expect(mockTerminate).toHaveBeenCalled();
   });
 
@@ -109,6 +113,7 @@ describe("ClientDocumentScanner", () => {
 
   it("shows a friendly error when OCR processing fails", async () => {
     const user = userEvent.setup();
+    installCanvasMocks();
     mockRecognize.mockRejectedValueOnce(new Error("OCR exploded"));
     render(<ClientDocumentScanner />);
 
