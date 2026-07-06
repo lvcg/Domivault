@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Mail, MapPin, Pencil, Phone, Plus, Star, Trash2, Wrench, X, type LucideIcon } from "lucide-react";
 import { vendors as seedVendors } from "@/lib/demo-data";
 import { Badge } from "@/components/ui/badge";
 import type { Vendor, VendorType } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 const vendorTone = {
   plumbing: "indigo",
@@ -32,12 +33,86 @@ const emptyVendor = {
   notes: "",
 };
 
+type VendorRow = {
+  id: string;
+  name: string;
+  company: string;
+  vendor_type: VendorType;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  rating: number | string | null;
+  preferred: boolean;
+  notes: string | null;
+};
+
+const vendorSelect = "id,name,company,vendor_type,phone,email,address,rating,preferred,notes";
+
+function mapVendor(row: VendorRow): Vendor {
+  return {
+    id: row.id,
+    name: row.name,
+    company: row.company,
+    type: row.vendor_type,
+    phone: row.phone || "",
+    email: row.email || "",
+    address: row.address || "",
+    rating: Number(row.rating) || 5,
+    preferred: row.preferred,
+    notes: row.notes || "",
+  };
+}
+
 export function VendorDirectory() {
+  const supabase = useMemo(() => createClient(), []);
   const [vendors, setVendors] = useState(seedVendors);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState(emptyVendor);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notice, setNotice] = useState("Vendor records are ready for repair scheduling and reminders.");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    const client = supabase;
+    let isMounted = true;
+
+    async function loadVendors() {
+      const { data: sessionData } = await client.auth.getSession();
+      const activeUserId = sessionData.session?.user.id;
+
+      if (!activeUserId) {
+        if (isMounted) setNotice("Demo mode. Login to sync vendor records to your account.");
+        return;
+      }
+
+      setUserId(activeUserId);
+      const { data, error } = await client
+        .from("vendors")
+        .select(vendorSelect)
+        .eq("user_id", activeUserId)
+        .order("company", { ascending: true });
+
+      if (!isMounted) return;
+
+      if (error) {
+        setNotice(`Vendor sync error: ${error.message}`);
+        return;
+      }
+
+      setVendors((data || []).map((row) => mapVendor(row as VendorRow)));
+      setNotice("Synced with your account. Vendor records save automatically.");
+    }
+
+    loadVendors();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase]);
 
   const resetForm = () => {
     setForm(emptyVendor);
@@ -67,7 +142,7 @@ export function VendorDirectory() {
     setIsModalOpen(true);
   };
 
-  const saveVendor = (event: React.FormEvent<HTMLFormElement>) => {
+  const saveVendor = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.company.trim() || !form.name.trim()) return;
 
@@ -84,12 +159,55 @@ export function VendorDirectory() {
       notes: form.notes.trim(),
     };
 
+    if (supabase && userId) {
+      setIsSaving(true);
+      const payload = {
+        user_id: userId,
+        company: nextVendor.company,
+        name: nextVendor.name,
+        vendor_type: nextVendor.type,
+        phone: nextVendor.phone || null,
+        email: nextVendor.email || null,
+        address: nextVendor.address || null,
+        rating: nextVendor.rating,
+        preferred: nextVendor.preferred,
+        notes: nextVendor.notes || null,
+      };
+      const request = editingId
+        ? supabase.from("vendors").update(payload).eq("id", editingId).eq("user_id", userId).select(vendorSelect).single()
+        : supabase.from("vendors").insert(payload).select(vendorSelect).single();
+      const { data, error } = await request;
+      setIsSaving(false);
+
+      if (error) {
+        setNotice(`Could not save vendor: ${error.message}`);
+        return;
+      }
+
+      const saved = mapVendor(data as VendorRow);
+      setVendors((current) => editingId ? current.map((vendor) => vendor.id === editingId ? saved : vendor) : [saved, ...current]);
+      setNotice(`${saved.company} ${editingId ? "updated" : "saved"} at ${formatTimestamp(new Date().toISOString())}. Form cleared.`);
+      resetForm();
+      return;
+    }
+
     setVendors((current) => editingId ? current.map((vendor) => vendor.id === editingId ? nextVendor : vendor) : [nextVendor, ...current]);
     setNotice(`${nextVendor.company} ${editingId ? "updated" : "saved"} at ${formatTimestamp(new Date().toISOString())}. Form cleared.`);
     resetForm();
   };
 
-  const deleteVendor = (vendor: Vendor) => {
+  const deleteVendor = async (vendor: Vendor) => {
+    if (supabase && userId && !vendor.id.startsWith("vendor-")) {
+      setDeletingId(vendor.id);
+      const { error } = await supabase.from("vendors").delete().eq("id", vendor.id).eq("user_id", userId);
+      setDeletingId(null);
+
+      if (error) {
+        setNotice(`Could not delete vendor: ${error.message}`);
+        return;
+      }
+    }
+
     setVendors((current) => current.filter((item) => item.id !== vendor.id));
     setNotice(`${vendor.company} deleted from the vendor address book.`);
   };
@@ -140,7 +258,7 @@ export function VendorDirectory() {
                 <button onClick={() => openEdit(vendor)} type="button" className="rounded-xl border border-slate-200 p-2 text-slate-600 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10" aria-label={`Edit ${vendor.company}`}>
                   <Pencil className="h-4 w-4" />
                 </button>
-                <button onClick={() => deleteVendor(vendor)} type="button" className="rounded-xl border border-rose-200 p-2 text-rose-600 transition-all duration-200 hover:bg-rose-50 dark:border-rose-400/20 dark:hover:bg-rose-400/10" aria-label={`Delete ${vendor.company}`}>
+                <button disabled={deletingId === vendor.id} onClick={() => deleteVendor(vendor)} type="button" className="rounded-xl border border-rose-200 p-2 text-rose-600 transition-all duration-200 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-400/20 dark:hover:bg-rose-400/10" aria-label={`Delete ${vendor.company}`}>
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
@@ -212,8 +330,8 @@ export function VendorDirectory() {
               <button onClick={resetForm} type="button" className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
                 Cancel
               </button>
-              <button type="submit" className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
-                {editingId ? "Save changes" : "Save vendor"}
+              <button disabled={isSaving} type="submit" className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950">
+                {isSaving ? "Saving..." : editingId ? "Save changes" : "Save vendor"}
               </button>
             </div>
           </form>

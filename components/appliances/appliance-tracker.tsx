@@ -115,7 +115,7 @@ export function ApplianceTracker() {
       }
 
       setUserId(activeUserId);
-      let { data, error } = await client
+      const { data, error } = await client
         .from("appliances")
         .select(applianceSelect)
         .eq("user_id", activeUserId)
@@ -126,38 +126,6 @@ export function ApplianceTracker() {
       if (error) {
         setNotice(`Appliance sync error: ${error.message}`);
         return;
-      }
-
-      if (!data || data.length === 0) {
-        const starterAppliances = seedAppliances.map((appliance) => ({
-          user_id: activeUserId,
-          vendor_id: null,
-          name: appliance.name,
-          brand: appliance.brand,
-          model: appliance.model,
-          location: appliance.location,
-          install_date: appliance.installDate,
-          expected_lifespan_years: appliance.expectedLifespanYears,
-          last_service_date: appliance.lastServiceDate || null,
-          next_service_date: appliance.nextServiceDate,
-          warranty_expires: appliance.warrantyExpires || null,
-          status: appliance.status,
-          notes: appliance.notes || null,
-        }));
-
-        const starter = await client
-          .from("appliances")
-          .insert(starterAppliances)
-          .select(applianceSelect);
-
-        if (!isMounted) return;
-
-        if (starter.error) {
-          setNotice(`Could not create starter appliance cards: ${starter.error.message}`);
-          return;
-        }
-
-        data = starter.data;
       }
 
       setAppliances((data || []).map((row) => mapAppliance(row as ApplianceRow)));

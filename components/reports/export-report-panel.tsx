@@ -16,8 +16,12 @@ function slugify(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function downloadBlob(filename: string, content: BlobPart, type: string) {
-  const blob = new Blob([content], { type });
+function getFilenameFromDisposition(disposition: string | null, fallback: string) {
+  const match = disposition?.match(/filename="?([^"]+)"?/i);
+  return match?.[1] || fallback;
+}
+
+function downloadBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -51,7 +55,8 @@ export function ExportReportPanel() {
     }
 
     const blob = await response.blob();
-    downloadBlob(`${slugify(report)}.${format}`, blob, response.headers.get("Content-Type") || "application/octet-stream");
+    const filename = getFilenameFromDisposition(response.headers.get("Content-Disposition"), `${slugify(report)}.${format}`);
+    downloadBlob(filename, blob);
     setNotice(`${report} ${format.toUpperCase()} exported.`);
     setIsExporting("");
   };

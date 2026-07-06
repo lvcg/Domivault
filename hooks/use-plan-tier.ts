@@ -4,6 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { PlanTier } from "@/types/homey";
 
+const plusEntitlementStorageKey = "domivault-plus-entitlement-active";
+const plusEntitlementEvent = "domivault-plus-entitlement-updated";
+
+function hasFreshClientPlusSignal() {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem(plusEntitlementStorageKey) === "true";
+}
+
 export function usePlanTier() {
   const supabase = useMemo(() => createClient(), []);
   const [planTier, setPlanTier] = useState<PlanTier>("free");
@@ -11,6 +19,7 @@ export function usePlanTier() {
 
   useEffect(() => {
     if (!supabase) {
+      setPlanTier(hasFreshClientPlusSignal() ? "vault_plus" : "free");
       setIsLoading(false);
       return;
     }
@@ -34,14 +43,23 @@ export function usePlanTier() {
         .maybeSingle();
 
       if (!isMounted) return;
-      setPlanTier((data?.plan_tier as PlanTier | null) || "free");
+      const syncedPlanTier = data?.plan_tier as PlanTier | null;
+      setPlanTier(syncedPlanTier === "vault_plus" || hasFreshClientPlusSignal() ? "vault_plus" : "free");
       setIsLoading(false);
     }
 
     loadPlan();
+    const refreshFromClientSignal = () => {
+      setPlanTier(hasFreshClientPlusSignal() ? "vault_plus" : "free");
+      loadPlan();
+    };
+    window.addEventListener(plusEntitlementEvent, refreshFromClientSignal);
+    window.addEventListener("storage", refreshFromClientSignal);
 
     return () => {
       isMounted = false;
+      window.removeEventListener(plusEntitlementEvent, refreshFromClientSignal);
+      window.removeEventListener("storage", refreshFromClientSignal);
     };
   }, [supabase]);
 

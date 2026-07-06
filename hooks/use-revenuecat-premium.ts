@@ -22,6 +22,9 @@ type RevenueCatPremiumState = {
   status: PremiumStatus | null;
 };
 
+const plusEntitlementStorageKey = "domivault-plus-entitlement-active";
+const plusEntitlementEvent = "domivault-plus-entitlement-updated";
+
 export function useRevenueCatPremium() {
   const supabase = useMemo(() => createClient(), []);
   const checkoutTargetRef = useRef<HTMLDivElement | null>(null);
@@ -61,6 +64,15 @@ export function useRevenueCatPremium() {
         packages: offeringState.packages,
         status,
       }));
+
+      if (typeof window !== "undefined") {
+        if (status.isPremium) {
+          window.localStorage.setItem(plusEntitlementStorageKey, "true");
+        } else {
+          window.localStorage.removeItem(plusEntitlementStorageKey);
+        }
+        window.dispatchEvent(new Event(plusEntitlementEvent));
+      }
     } catch (error) {
       setState((current) => ({
         ...current,
@@ -101,6 +113,11 @@ export function useRevenueCatPremium() {
       managementURL: result.premiumStatus.managementURL,
       status: result.premiumStatus,
     }));
+
+    if (result.premiumStatus.isPremium && typeof window !== "undefined") {
+      window.localStorage.setItem(plusEntitlementStorageKey, "true");
+      window.dispatchEvent(new Event(plusEntitlementEvent));
+    }
 
     return result;
   }, [state.appUserId, state.email]);

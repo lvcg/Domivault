@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bell, CalendarDays, CalendarPlus, Mail, MessageSquareText, Pencil, Plus, Trash2, UsersRound, X } from "lucide-react";
 import { maintenanceTasks, vendors } from "@/lib/demo-data";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import type { MaintenancePriority, MaintenanceStatus, MaintenanceTask, ReminderC
 import { formatTimestamp } from "@/lib/utils";
 import { PremiumLock } from "@/components/ui/premium-lock";
 import { createGoogleCalendarMaintenanceUrl } from "@/lib/calendar";
+import { createClient } from "@/lib/supabase/client";
 
 const priorityTone = {
   critical: "rose",
@@ -34,14 +35,122 @@ const emptyTask = {
   status: "pending" as MaintenanceStatus,
 };
 
+type MaintenanceTaskRow = {
+  id: string;
+  title: string;
+  area: string | null;
+  instructions: string | null;
+  recurrence_interval_months: number | null;
+  due_date: string;
+  reminder_date: string | null;
+  notification_channel: ReminderChannel | null;
+  vendor_id: string | null;
+  priority: MaintenancePriority;
+  status: MaintenanceStatus;
+};
+
+type VendorRow = {
+  id: string;
+  company: string;
+};
+
+const taskSelect = "id,title,area,instructions,recurrence_interval_months,due_date,reminder_date,notification_channel,vendor_id,priority,status";
+
+function cadenceToMonths(cadence: string) {
+  if (cadence === "Monthly") return 1;
+  if (cadence === "Every 6 months") return 6;
+  if (cadence === "Annually") return 12;
+  return 3;
+}
+
+function monthsToCadence(months?: number | null) {
+  if (months === 1) return "Monthly";
+  if (months === 6) return "Every 6 months";
+  if (months === 12) return "Annually";
+  return "Every 3 months";
+}
+
+function mapTask(row: MaintenanceTaskRow): MaintenanceTask {
+  return {
+    id: row.id,
+    title: row.title,
+    area: row.area || "General",
+    notes: row.instructions || undefined,
+    cadence: monthsToCadence(row.recurrence_interval_months),
+    dueDate: row.due_date,
+    reminderDate: row.reminder_date || undefined,
+    reminderChannel: row.notification_channel || "email",
+    assignedVendorId: row.vendor_id || undefined,
+    priority: row.priority,
+    status: row.status,
+  };
+}
+
 export function MaintenanceBoard() {
+  const supabase = useMemo(() => createClient(), []);
   const [tasks, setTasks] = useState(maintenanceTasks);
+  const [vendorOptions, setVendorOptions] = useState(vendors.map((vendor) => ({ id: vendor.id, company: vendor.company })));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyTask);
   const [notice, setNotice] = useState("Reminder delivery is ready for email, SMS, push, and calendar export.");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const addTask = (event: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (!supabase) return;
+
+    const client = supabase;
+    let isMounted = true;
+
+    async function loadRecords() {
+      const { data: sessionData } = await client.auth.getSession();
+      const activeUserId = sessionData.session?.user.id;
+
+      if (!activeUserId) {
+        if (isMounted) setNotice("Demo mode. Login to sync maintenance reminders to your account.");
+        return;
+      }
+
+      setUserId(activeUserId);
+      const [taskResult, vendorResult] = await Promise.all([
+        client
+          .from("maintenance_tasks")
+          .select(taskSelect)
+          .eq("user_id", activeUserId)
+          .order("due_date", { ascending: true }),
+        client
+          .from("vendors")
+          .select("id,company")
+          .eq("user_id", activeUserId)
+          .order("company", { ascending: true }),
+      ]);
+
+      if (!isMounted) return;
+
+      if (taskResult.error) {
+        setNotice(`Maintenance sync error: ${taskResult.error.message}`);
+        return;
+      }
+
+      if (vendorResult.error) {
+        setNotice(`Vendor sync warning: ${vendorResult.error.message}`);
+      }
+
+      setTasks((taskResult.data || []).map((row) => mapTask(row as MaintenanceTaskRow)));
+      setVendorOptions((vendorResult.data || []).map((row) => row as VendorRow));
+      setNotice("Synced with your account. Maintenance reminders save automatically.");
+    }
+
+    loadRecords();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase]);
+
+  const addTask = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.title.trim() || !form.area.trim()) return;
 
@@ -58,6 +167,41 @@ export function MaintenanceBoard() {
       priority: form.priority,
       status: form.status,
     };
+
+    if (supabase && userId) {
+      setIsSaving(true);
+      const payload = {
+        user_id: userId,
+        title: nextTask.title,
+        area: nextTask.area,
+        instructions: nextTask.notes || null,
+        recurrence_interval_months: cadenceToMonths(nextTask.cadence),
+        due_date: nextTask.dueDate,
+        reminder_date: nextTask.reminderDate || null,
+        notification_channel: nextTask.reminderChannel || "email",
+        vendor_id: nextTask.assignedVendorId || null,
+        priority: nextTask.priority,
+        status: nextTask.status,
+      };
+      const request = editingTaskId
+        ? supabase.from("maintenance_tasks").update(payload).eq("id", editingTaskId).eq("user_id", userId).select(taskSelect).single()
+        : supabase.from("maintenance_tasks").insert(payload).select(taskSelect).single();
+      const { data, error } = await request;
+      setIsSaving(false);
+
+      if (error) {
+        setNotice(`Could not save reminder: ${error.message}`);
+        return;
+      }
+
+      const saved = mapTask(data as MaintenanceTaskRow);
+      setTasks((current) => (editingTaskId ? current.map((task) => (task.id === editingTaskId ? saved : task)) : [saved, ...current]));
+      setForm(emptyTask);
+      setEditingTaskId(null);
+      setIsModalOpen(false);
+      setNotice(`${saved.title} ${editingTaskId ? "updated" : "saved"} at ${formatTimestamp(new Date().toISOString())}. Form cleared.`);
+      return;
+    }
 
     setTasks((current) => {
       if (!editingTaskId) return [nextTask, ...current];
@@ -86,7 +230,18 @@ export function MaintenanceBoard() {
     setIsModalOpen(true);
   };
 
-  const deleteTask = (task: MaintenanceTask) => {
+  const deleteTask = async (task: MaintenanceTask) => {
+    if (supabase && userId && !task.id.startsWith("task-")) {
+      setDeletingId(task.id);
+      const { error } = await supabase.from("maintenance_tasks").delete().eq("id", task.id).eq("user_id", userId);
+      setDeletingId(null);
+
+      if (error) {
+        setNotice(`Could not delete reminder: ${error.message}`);
+        return;
+      }
+    }
+
     setTasks((current) => current.filter((item) => item.id !== task.id));
     setNotice(`${task.title} deleted from maintenance schedule.`);
   };
@@ -145,7 +300,7 @@ export function MaintenanceBoard() {
       </div>
       <div className="grid gap-4 lg:grid-cols-3">
         {tasks.map((task) => {
-          const vendor = vendors.find((item) => item.id === task.assignedVendorId);
+          const vendor = vendorOptions.find((item) => item.id === task.assignedVendorId);
 
           return (
             <article key={task.id} className="rounded-3xl border border-slate-200/70 bg-white/80 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-white/[0.05]">
@@ -213,9 +368,9 @@ export function MaintenanceBoard() {
                   <Pencil className="h-4 w-4" />
                   Edit
                 </button>
-                <button onClick={() => deleteTask(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 text-sm font-semibold text-rose-700 transition-all duration-200 hover:bg-rose-50 dark:border-rose-400/20 dark:text-rose-200 dark:hover:bg-rose-400/10">
+                <button disabled={deletingId === task.id} onClick={() => deleteTask(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 text-sm font-semibold text-rose-700 transition-all duration-200 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-400/20 dark:text-rose-200 dark:hover:bg-rose-400/10">
                   <Trash2 className="h-4 w-4" />
-                  Delete
+                  {deletingId === task.id ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </article>
@@ -261,7 +416,7 @@ export function MaintenanceBoard() {
               <Field label="Assigned vendor">
                 <select value={form.assignedVendorId} onChange={(event) => setForm({ ...form, assignedVendorId: event.target.value })} className="input">
                   <option value="">Unassigned</option>
-                  {vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.company}</option>)}
+                  {vendorOptions.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.company}</option>)}
                 </select>
               </Field>
               <Field label="Due date">
@@ -293,8 +448,8 @@ export function MaintenanceBoard() {
               <button onClick={() => { setIsModalOpen(false); setEditingTaskId(null); setForm(emptyTask); }} type="button" className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
                 Cancel
               </button>
-              <button type="submit" className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
-                {editingTaskId ? "Update reminder" : "Save reminder"}
+              <button disabled={isSaving} type="submit" className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950">
+                {isSaving ? "Saving..." : editingTaskId ? "Update reminder" : "Save reminder"}
               </button>
             </div>
           </form>

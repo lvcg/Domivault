@@ -39,6 +39,8 @@ function mapExpense(row: ExpenseRow): Expense {
 export function DashboardOverview() {
   const supabase = useMemo(() => createClient(), []);
   const [expenses, setExpenses] = useState(seedExpenses);
+  const [upcomingTasks, setUpcomingTasks] = useState(maintenanceTasks.filter((task) => task.status !== "completed").length);
+  const [serviceSoon, setServiceSoon] = useState(appliances.filter((appliance) => appliance.status === "service-soon" || appliance.status === "replace").length);
   const [syncMessage, setSyncMessage] = useState("Dashboard is using demo expense data. Login and run the database setup to sync.");
 
   useEffect(() => {
@@ -47,39 +49,58 @@ export function DashboardOverview() {
     const client = supabase;
     let isMounted = true;
 
-    async function loadExpenses() {
+    async function loadDashboardData() {
       const { data: sessionData } = await client.auth.getSession();
       const userId = sessionData.session?.user.id;
       if (!userId) return;
 
-      const { data, error } = await client
-        .from("expenses")
-        .select("id,project_id,category,vendor,description,amount,expense_date,tax_deductible,document_url")
-        .eq("user_id", userId)
-        .order("expense_date", { ascending: false });
+      const [expenseResult, taskResult, applianceResult] = await Promise.all([
+        client
+          .from("expenses")
+          .select("id,project_id,category,vendor,description,amount,expense_date,tax_deductible,document_url")
+          .eq("user_id", userId)
+          .order("expense_date", { ascending: false }),
+        client
+          .from("maintenance_tasks")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .neq("status", "completed"),
+        client
+          .from("appliances")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .in("status", ["service-soon", "replace"]),
+      ]);
 
       if (!isMounted) return;
 
-      if (error) {
-        setSyncMessage(`Dashboard could not load synced expenses: ${error.message}`);
+      if (expenseResult.error || taskResult.error || applianceResult.error) {
+        setSyncMessage(`Dashboard could not load synced records: ${expenseResult.error?.message || taskResult.error?.message || applianceResult.error?.message}`);
         return;
       }
 
-      setExpenses((data || []).map((row) => mapExpense(row as ExpenseRow)));
-      setSyncMessage("Dashboard totals are calculated from your synced expense records.");
+      setExpenses((expenseResult.data || []).map((row) => mapExpense(row as ExpenseRow)));
+      setUpcomingTasks(taskResult.count || 0);
+      setServiceSoon(applianceResult.count || 0);
+      setSyncMessage("Dashboard totals are calculated from your synced records.");
     }
 
-    loadExpenses();
+    loadDashboardData();
+    const refreshOnFocus = () => loadDashboardData();
+    window.addEventListener("focus", refreshOnFocus);
+    const { data: authListener } = client.auth.onAuthStateChange(() => {
+      loadDashboardData();
+    });
 
     return () => {
       isMounted = false;
+      window.removeEventListener("focus", refreshOnFocus);
+      authListener.subscription.unsubscribe();
     };
   }, [supabase]);
 
   const totalInvested = expenses.filter((expense) => expense.category !== "utilities").reduce((sum, expense) => sum + expense.amount, 0);
   const utilitySpend = expenses.filter((expense) => expense.category === "utilities").reduce((sum, expense) => sum + expense.amount, 0);
-  const upcomingTasks = maintenanceTasks.filter((task) => task.status !== "completed").length;
-  const serviceSoon = appliances.filter((appliance) => appliance.status === "service-soon" || appliance.status === "replace").length;
 
   return (
     <div className="space-y-6">

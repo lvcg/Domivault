@@ -33,4 +33,12 @@ body {
   .input {
     @apply w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 dark:border-white/10 dark:bg-white/5 dark:text-white;
   }
+
+  select.input option {
+    @apply bg-white text-slate-950;
+  }
+
+  .dark select.input option {
+    @apply bg-slate-950 text-white;
+  }
 }
