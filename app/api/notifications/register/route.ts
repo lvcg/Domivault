@@ -21,6 +21,17 @@ function isValidSubscription(value: unknown): value is PushSubscriptionPayload {
   );
 }
 
+function isMissingPushSchema(error: { message?: string; code?: string }) {
+  const message = error.message || "";
+  return error.code === "PGRST204" || /push_enabled|push_subscription|schema cache/i.test(message);
+}
+
+function missingPushSchemaResponse() {
+  return NextResponse.json({
+    message: "Push notification columns are missing in Supabase. Run supabase/push-notifications.sql in the Supabase SQL Editor, then retry.",
+  }, { status: 500 });
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
 
@@ -54,6 +65,7 @@ export async function POST(request: Request) {
     });
 
   if (error) {
+    if (isMissingPushSchema(error)) return missingPushSchemaResponse();
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 
@@ -85,9 +97,9 @@ export async function DELETE() {
     .eq("id", user.id);
 
   if (error) {
+    if (isMissingPushSchema(error)) return missingPushSchemaResponse();
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
 }
-

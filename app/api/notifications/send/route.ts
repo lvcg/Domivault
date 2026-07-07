@@ -9,6 +9,11 @@ type PushProfileRow = {
   push_subscription?: webPush.PushSubscription | null;
 };
 
+function isMissingPushSchema(error: { message?: string; code?: string }) {
+  const message = error.message || "";
+  return error.code === "PGRST204" || /push_enabled|push_subscription|schema cache/i.test(message);
+}
+
 function configureWebPush() {
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
@@ -48,6 +53,11 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (error) {
+    if (isMissingPushSchema(error)) {
+      return NextResponse.json({
+        message: "Push notification columns are missing in Supabase. Run supabase/push-notifications.sql in the Supabase SQL Editor, then retry.",
+      }, { status: 500 });
+    }
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
 
