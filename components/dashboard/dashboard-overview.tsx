@@ -22,6 +22,25 @@ type ExpenseRow = {
   document_url: string | null;
 };
 
+const localMaintenanceTasksKey = "domivault-local-maintenance-tasks";
+const localAppliancesKey = "domivault-local-appliances";
+
+function readLocalDashboardData() {
+  try {
+    const localTasks = JSON.parse(window.localStorage.getItem(localMaintenanceTasksKey) || "null") as typeof maintenanceTasks | null;
+    const localAppliances = JSON.parse(window.localStorage.getItem(localAppliancesKey) || "null") as typeof appliances | null;
+    return {
+      tasks: localTasks || maintenanceTasks,
+      applianceRecords: localAppliances || appliances,
+    };
+  } catch {
+    return {
+      tasks: maintenanceTasks,
+      applianceRecords: appliances,
+    };
+  }
+}
+
 function mapExpense(row: ExpenseRow): Expense {
   return {
     id: row.id,
@@ -44,7 +63,18 @@ export function DashboardOverview() {
   const [syncMessage, setSyncMessage] = useState("Dashboard is using demo expense data. Login and run the database setup to sync.");
 
   useEffect(() => {
-    if (!supabase) return;
+    const loadLocalDashboardData = () => {
+      const { tasks, applianceRecords } = readLocalDashboardData();
+      setUpcomingTasks(tasks.filter((task) => task.status !== "completed").length);
+      setServiceSoon(applianceRecords.filter((appliance) => appliance.status === "service-soon" || appliance.status === "replace").length);
+      setSyncMessage("Dashboard is using browser-local records. Login to sync across devices.");
+    };
+
+    if (!supabase) {
+      loadLocalDashboardData();
+      window.addEventListener("focus", loadLocalDashboardData);
+      return () => window.removeEventListener("focus", loadLocalDashboardData);
+    }
 
     const client = supabase;
     let isMounted = true;
@@ -52,7 +82,10 @@ export function DashboardOverview() {
     async function loadDashboardData() {
       const { data: sessionData } = await client.auth.getSession();
       const userId = sessionData.session?.user.id;
-      if (!userId) return;
+      if (!userId) {
+        if (isMounted) loadLocalDashboardData();
+        return;
+      }
 
       const [expenseResult, taskResult, applianceResult] = await Promise.all([
         client

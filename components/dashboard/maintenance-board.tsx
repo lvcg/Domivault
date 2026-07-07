@@ -55,6 +55,16 @@ type VendorRow = {
 };
 
 const taskSelect = "id,title,area,instructions,recurrence_interval_months,due_date,reminder_date,notification_channel,vendor_id,priority,status";
+const localMaintenanceTasksKey = "domivault-local-maintenance-tasks";
+
+function loadLocalMaintenanceTasks() {
+  try {
+    const savedTasks = window.localStorage.getItem(localMaintenanceTasksKey);
+    return savedTasks ? (JSON.parse(savedTasks) as MaintenanceTask[]) : maintenanceTasks;
+  } catch {
+    return maintenanceTasks;
+  }
+}
 
 function cadenceToMonths(cadence: string) {
   if (cadence === "Monthly") return 1;
@@ -99,7 +109,11 @@ export function MaintenanceBoard() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase) {
+      setTasks(loadLocalMaintenanceTasks());
+      setNotice("Local mode. Maintenance changes are saved in this browser.");
+      return;
+    }
 
     const client = supabase;
     let isMounted = true;
@@ -109,7 +123,10 @@ export function MaintenanceBoard() {
       const activeUserId = sessionData.session?.user.id;
 
       if (!activeUserId) {
-        if (isMounted) setNotice("Demo mode. Login to sync maintenance reminders to your account.");
+        if (isMounted) {
+          setTasks(loadLocalMaintenanceTasks());
+          setNotice("Local mode. Maintenance changes are saved in this browser. Login to sync across devices.");
+        }
         return;
       }
 
@@ -204,8 +221,9 @@ export function MaintenanceBoard() {
     }
 
     setTasks((current) => {
-      if (!editingTaskId) return [nextTask, ...current];
-      return current.map((task) => (task.id === editingTaskId ? { ...nextTask, id: editingTaskId } : task));
+      const nextTasks = !editingTaskId ? [nextTask, ...current] : current.map((task) => (task.id === editingTaskId ? { ...nextTask, id: editingTaskId } : task));
+      window.localStorage.setItem(localMaintenanceTasksKey, JSON.stringify(nextTasks));
+      return nextTasks;
     });
     setForm(emptyTask);
     setEditingTaskId(null);
@@ -242,7 +260,13 @@ export function MaintenanceBoard() {
       }
     }
 
-    setTasks((current) => current.filter((item) => item.id !== task.id));
+    setTasks((current) => {
+      const nextTasks = current.filter((item) => item.id !== task.id);
+      if (!supabase || !userId || task.id.startsWith("task-")) {
+        window.localStorage.setItem(localMaintenanceTasksKey, JSON.stringify(nextTasks));
+      }
+      return nextTasks;
+    });
     setNotice(`${task.title} deleted from maintenance schedule.`);
   };
 

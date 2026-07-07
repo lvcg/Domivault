@@ -49,6 +49,16 @@ type ApplianceRow = {
 };
 
 const applianceSelect = "id,vendor_id,name,brand,model,location,install_date,expected_lifespan_years,last_service_date,next_service_date,warranty_expires,status,notes";
+const localAppliancesKey = "domivault-local-appliances";
+
+function loadLocalAppliances() {
+  try {
+    const savedAppliances = window.localStorage.getItem(localAppliancesKey);
+    return savedAppliances ? (JSON.parse(savedAppliances) as Appliance[]) : seedAppliances;
+  } catch {
+    return seedAppliances;
+  }
+}
 
 function getAge(installDate: string) {
   const installed = new Date(installDate);
@@ -98,7 +108,8 @@ export function ApplianceTracker() {
 
   useEffect(() => {
     if (!supabase) {
-      setNotice("Add cloud sync env keys to sync appliances.");
+      setAppliances(loadLocalAppliances());
+      setNotice("Local mode. Appliance changes are saved in this browser.");
       return;
     }
 
@@ -110,7 +121,10 @@ export function ApplianceTracker() {
       const activeUserId = sessionData.session?.user.id;
 
       if (!activeUserId) {
-        if (isMounted) setNotice("Demo mode. Login to save appliance records to your secure account.");
+        if (isMounted) {
+          setAppliances(loadLocalAppliances());
+          setNotice("Local mode. Appliance changes are saved in this browser. Login to sync across devices.");
+        }
         return;
       }
 
@@ -236,7 +250,11 @@ export function ApplianceTracker() {
       return;
     }
 
-    setAppliances((current) => (editingApplianceId ? current.map((item) => (item.id === editingApplianceId ? draft : item)) : [draft, ...current]));
+    setAppliances((current) => {
+      const nextAppliances = editingApplianceId ? current.map((item) => (item.id === editingApplianceId ? draft : item)) : [draft, ...current];
+      window.localStorage.setItem(localAppliancesKey, JSON.stringify(nextAppliances));
+      return nextAppliances;
+    });
     setNotice(`${draft.name} ${editingApplianceId ? "updated" : "saved"} locally at ${formatTimestamp(new Date().toISOString())}. Form cleared. Login to sync changes.`);
     resetForm();
   };
@@ -250,7 +268,13 @@ export function ApplianceTracker() {
       }
     }
 
-    setAppliances((current) => current.filter((item) => item.id !== appliance.id));
+    setAppliances((current) => {
+      const nextAppliances = current.filter((item) => item.id !== appliance.id);
+      if (!supabase || !userId || appliance.id.startsWith("appliance-")) {
+        window.localStorage.setItem(localAppliancesKey, JSON.stringify(nextAppliances));
+      }
+      return nextAppliances;
+    });
     setNotice(`${appliance.name} deleted.`);
   };
 

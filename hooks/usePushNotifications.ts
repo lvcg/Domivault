@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useCallback, useEffect, useState } from "react";
 
 type PushStatus = "unsupported" | "idle" | "requesting" | "enabled" | "denied" | "error";
 
@@ -13,7 +12,6 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export function usePushNotifications() {
-  const supabase = useMemo(() => createClient(), []);
   const [status, setStatus] = useState<PushStatus>("idle");
   const [message, setMessage] = useState("Enable browser push reminders for due maintenance tasks.");
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -54,12 +52,6 @@ export function usePushNotifications() {
       return false;
     }
 
-    if (!supabase) {
-      setStatus("error");
-      setMessage("Supabase auth is not configured.");
-      return false;
-    }
-
     setStatus("requesting");
     setMessage("Requesting browser notification permission...");
 
@@ -93,7 +85,7 @@ export function usePushNotifications() {
     setStatus("enabled");
     setMessage("Push reminders are enabled for this browser.");
     return true;
-  }, [isSupported, publicKey, supabase]);
+  }, [isSupported, publicKey]);
 
   const unregisterPushNotifications = useCallback(async () => {
     if (!isSupported) return false;
@@ -114,4 +106,3 @@ export function usePushNotifications() {
     unregisterPushNotifications,
   };
 }
-
