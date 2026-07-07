@@ -246,9 +246,33 @@ export function MaintenanceBoard() {
     setNotice(`${task.title} deleted from maintenance schedule.`);
   };
 
-  const sendTestReminder = (task: MaintenanceTask) => {
+  const sendTestReminder = async (task: MaintenanceTask) => {
     const channel = task.reminderChannel || "email";
-    setNotice(`Prepared ${channel.toUpperCase()} reminder for "${task.title}". Connect provider keys in Settings to send automatically.`);
+
+    if (channel !== "push") {
+      setNotice(`${channel.toUpperCase()} reminder preference saved for "${task.title}".`);
+      return;
+    }
+
+    setNotice(`Sending push reminder for "${task.title}"...`);
+    const response = await fetch("/api/notifications/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "DomiVault maintenance reminder",
+        body: `${task.title} is due ${task.dueDate}.`,
+        tag: `maintenance-${task.id}`,
+        url: "/maintenance",
+      }),
+    });
+    const payload = await response.json().catch(() => ({ message: "Push reminder failed." }));
+
+    if (!response.ok) {
+      setNotice(payload.message || "Push reminder failed.");
+      return;
+    }
+
+    setNotice(`Push reminder sent for "${task.title}".`);
   };
 
   const downloadCalendarEvent = (task: MaintenanceTask) => {

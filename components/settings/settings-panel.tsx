@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bell, CalendarDays, Home, Mail, Moon, Save, Trash2 } from "lucide-react";
+import { Bell, BellRing, CalendarDays, Home, Mail, Moon, Save, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { PlanTier, ReminderChannel } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
 import { RevenueCatUpgradeButton } from "@/components/billing/revenuecat-upgrade-button";
+import { useDomiVaultUser } from "@/components/auth/domivault-user-provider";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 type SettingsState = {
   username: string;
@@ -58,6 +60,8 @@ function saveLocalSettings(settings: SettingsState, savedAt?: string) {
 
 export function SettingsPanel() {
   const supabase = useMemo(() => createClient(), []);
+  const { isPlusUser, planTier: activePlanTier } = useDomiVaultUser();
+  const pushNotifications = usePushNotifications();
   const [settings, setSettings] = useState<SettingsState>(defaultSettings);
   const [message, setMessage] = useState("Login to sync settings to your secure account.");
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
@@ -70,6 +74,15 @@ export function SettingsPanel() {
   const updateSetting = <Key extends keyof SettingsState>(key: Key, value: SettingsState[Key]) => {
     setSettings((current) => ({ ...current, [key]: value }));
   };
+
+  useEffect(() => {
+    setSettings((current) => ({
+      ...current,
+      calendarSync: isPlusUser ? current.calendarSync : false,
+      receiptScan: isPlusUser ? current.receiptScan : false,
+      planTier: activePlanTier,
+    }));
+  }, [activePlanTier, isPlusUser]);
 
   useEffect(() => {
     const localSettings = localStorage.getItem("homey-settings");
@@ -120,7 +133,7 @@ export function SettingsPanel() {
           calendarSync: typeof profile.calendar_sync === "boolean" ? profile.calendar_sync : current.calendarSync,
           receiptScan: typeof profile.receipt_scan === "boolean" ? profile.receipt_scan : current.receiptScan,
           darkMode: typeof profile.dark_mode === "boolean" ? profile.dark_mode : current.darkMode,
-          planTier: profile.plan_tier || current.planTier,
+          planTier: activePlanTier || profile.plan_tier || current.planTier,
         };
         applyTheme(nextSettings.darkMode);
         saveLocalSettings(nextSettings, profile.settings_saved_at || profile.updated_at || undefined);
@@ -133,7 +146,7 @@ export function SettingsPanel() {
     }
 
     loadProfile();
-  }, [supabase]);
+  }, [activePlanTier, supabase]);
 
   const saveSettings = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -273,8 +286,24 @@ export function SettingsPanel() {
                 <option value="push">Push</option>
               </select>
             </Field>
-            <Toggle icon={CalendarDays} label="Calendar sync (Plus)" checked={settings.planTier === "vault_plus" && settings.calendarSync} disabled={settings.planTier !== "vault_plus"} onChange={(checked) => updateSetting("calendarSync", checked)} />
-            <Toggle icon={Mail} label="Receipt scan suggestions (Plus)" checked={settings.planTier === "vault_plus" && settings.receiptScan} disabled={settings.planTier !== "vault_plus"} onChange={(checked) => updateSetting("receiptScan", checked)} />
+            <div className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/5">
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  <BellRing className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+                  Browser push reminders
+                </span>
+                <button
+                  onClick={pushNotifications.status === "enabled" ? pushNotifications.unregisterPushNotifications : pushNotifications.registerPushNotifications}
+                  type="button"
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950"
+                >
+                  {pushNotifications.status === "enabled" ? "Disable push" : "Enable push"}
+                </button>
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{pushNotifications.message}</p>
+            </div>
+            <Toggle icon={CalendarDays} label="Calendar sync (Plus)" checked={isPlusUser && settings.calendarSync} disabled={!isPlusUser} onChange={(checked) => updateSetting("calendarSync", checked)} />
+            <Toggle icon={Mail} label="Receipt scan suggestions (Plus)" checked={isPlusUser && settings.receiptScan} disabled={!isPlusUser} onChange={(checked) => updateSetting("receiptScan", checked)} />
             <Toggle icon={Moon} label="Dark mode" checked={settings.darkMode} onChange={(checked) => {
               const nextSettings = { ...settings, darkMode: checked };
               setSettings(nextSettings);
@@ -290,7 +319,7 @@ export function SettingsPanel() {
 
         <div id="plan" className="xl:col-span-2 rounded-3xl border border-slate-200/70 bg-white/85 p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">Plan</p>
-          <h3 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">{settings.planTier === "free" ? "DomiVault Free" : "DomiVault Plus"}</h3>
+          <h3 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">{isPlusUser ? "DomiVault Plus" : "DomiVault Free"}</h3>
           <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
             Free includes core home records. Plus unlocks warranty tracking, receipt storage, maintenance history, Google Calendar sync, vehicle repair records, expiration alerts, and export reports. Plan changes are controlled by RevenueCat billing and are not editable from profile settings.
           </p>

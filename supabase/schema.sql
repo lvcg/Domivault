@@ -83,6 +83,9 @@ alter table public.profiles add column if not exists calendar_sync boolean not n
 alter table public.profiles add column if not exists receipt_scan boolean not null default false;
 alter table public.profiles add column if not exists dark_mode boolean not null default false;
 alter table public.profiles add column if not exists settings_saved_at timestamptz;
+alter table public.profiles add column if not exists push_enabled boolean not null default false;
+alter table public.profiles add column if not exists push_subscription jsonb;
+alter table public.profiles add column if not exists push_subscription_saved_at timestamptz;
 alter table public.profiles add column if not exists plan_tier public.plan_tier not null default 'free';
 alter table public.profiles add column if not exists revenuecat_app_user_id text;
 alter table public.profiles add column if not exists revenuecat_customer_id text;
@@ -415,6 +418,7 @@ before update on public.vehicle_service_events
 for each row execute function public.set_updated_at();
 
 create index if not exists projects_user_status_idx on public.projects(user_id, status);
+create index if not exists profiles_push_enabled_idx on public.profiles(id, push_enabled) where push_enabled = true;
 create index if not exists expenses_user_date_idx on public.expenses(user_id, expense_date desc);
 create index if not exists expenses_project_idx on public.expenses(project_id);
 create index if not exists expenses_user_category_idx on public.expenses(user_id, category);
