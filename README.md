@@ -11,7 +11,6 @@ It centralizes the operational side of home ownership: improvement expenses, uti
 | Live app | https://domivaultapp.com |
 | Privacy policy | https://domivaultapp.com/privacy |
 | Terms of service | https://domivaultapp.com/terms |
-| Repository | https://github.com/lvcg/Domivault |
 
 > DomiVault helps homeowners keep receipts, warranties, maintenance records, and repair history organized before they need them.
 
@@ -111,7 +110,7 @@ Embed once recorded:
 | Billing foundation | RevenueCat | Provides subscription entitlement checks for DomiVault Plus and webhook-driven profile updates. |
 | Testing | Jest + Playwright | Covers unit-level behavior and end-to-end workflows for dashboard sync, deletes, Plus gates, exports, and push setup. |
 
-## Repository Structure
+## Project Structure
 
 ```text
 app/
@@ -277,8 +276,7 @@ In Supabase Auth settings:
 1. Enable email/password sign-in.
 2. Enable magic links if passwordless login is desired.
 3. Enable Google OAuth only after Google Cloud OAuth credentials are configured.
-4. Keep GitHub OAuth disabled unless intentionally reintroduced.
-5. Set the Site URL:
+4. Set the Site URL:
 
 ```text
 https://domivaultapp.com
@@ -334,7 +332,7 @@ https://odxobincteposdhqhxvs.supabase.co/auth/v1/callback
 
 ### Vercel Deployment
 
-1. Connect the GitHub repository to Vercel.
+1. Connect the project to Vercel.
 2. Add the production environment variables from `.env.production.example`.
 3. Set the production domain:
 
@@ -461,7 +459,6 @@ Recommended upload flow:
 - PDF-to-image OCR pipeline for scanned PDFs.
 - Full Google Calendar two-way sync.
 - Production email/SMS reminder delivery.
-- Mobile shell with Capacitor for app-store distribution.
 - Expanded analytics for annual home cost forecasting.
 - Admin-quality observability dashboards for production support.
 
