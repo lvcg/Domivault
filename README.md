@@ -18,7 +18,7 @@ It is built as a responsive Next.js app with Supabase-ready auth, database table
 
 ![Login and signup](public/screenshots/domivault-login.png)
 
-## Demo Video
+
 
 <video src="public/demo/domivault-walkthrough.mp4" controls width="100%"></video>
 ## Core Features
