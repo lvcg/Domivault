@@ -231,14 +231,6 @@ export function SettingsPanel() {
 
   return (
     <section className="space-y-5">
-      <div className="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
-        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">Workspace settings</p>
-        <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">Home profile, reminders, and integrations</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-          Configure the default home profile, reminder delivery, receipt scanning, and calendar sync behavior.
-        </p>
-      </div>
-
       <form onSubmit={saveSettings} className="grid gap-4 xl:grid-cols-[1fr_0.8fr]">
         <div className="rounded-3xl border border-slate-200/70 bg-white/85 p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
           <div className="mb-5 flex items-center gap-3">
