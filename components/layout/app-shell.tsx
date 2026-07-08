@@ -5,6 +5,8 @@ import Link from "next/link";
 import { CalendarCheck, Car, ClipboardList, FileQuestion, FileText, Gauge, Home, LogIn, LogOut, Refrigerator, ReceiptText, ScanLine, Settings, ShieldCheck, Sparkles, UsersRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatTimestamp } from "@/lib/utils";
+import { useDomiVaultUser } from "@/components/auth/domivault-user-provider";
+import { PlanStatusBadge } from "@/components/billing/plan-status-badge";
 
 const navigation = [
   { label: "Dashboard", href: "/dashboard", icon: Gauge },
@@ -56,6 +58,7 @@ function formatUsername(nameOrEmail?: string | null) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const supabase = useMemo(() => createClient(), []);
+  const { isLoading: isPlanLoading, isPlusUser } = useDomiVaultUser();
   const initialProfile = useMemo(getStoredProfile, []);
   const [username, setUsername] = useState(initialProfile.username);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(initialProfile.lastSavedAt);
@@ -180,7 +183,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <header className="mb-6 flex flex-col justify-between gap-4 border-b border-slate-200/70 pb-6 dark:border-white/10 sm:flex-row sm:items-center">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300">Home command center</p>
-              <h1 suppressHydrationWarning className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">{username}</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <h1 suppressHydrationWarning className="text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">{username}</h1>
+                <PlanStatusBadge isLoading={isPlanLoading} isPlusUser={isPlusUser} />
+              </div>
               <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                 Stay ahead of your home's costs, upkeep, and next priorities.
                 <span className="mt-1 block font-medium text-slate-700 dark:text-slate-300">Last saved: {formatTimestamp(lastSavedAt)}</span>

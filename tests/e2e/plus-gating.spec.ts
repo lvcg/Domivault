@@ -7,7 +7,7 @@ test.describe("DomiVault Plus gating", () => {
     await mockReportExport(page, false);
 
     await page.goto("/settings");
-    await expect(page.getByText("DomiVault Free")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Plan: Free Tier" })).toBeVisible();
     await expect(page.getByLabel("Calendar sync (Plus)")).toBeDisabled();
     await expect(page.getByLabel("Receipt scan suggestions (Plus)")).toBeDisabled();
 
@@ -22,7 +22,7 @@ test.describe("DomiVault Plus gating", () => {
     await mockReportExport(page, true);
 
     await page.goto("/settings");
-    await expect(page.getByRole("heading", { name: "DomiVault Plus" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Plan: DomiVault Plus" })).toBeVisible();
     await expect(page.getByLabel("Calendar sync (Plus)")).toBeEnabled();
     await expect(page.getByLabel("Receipt scan suggestions (Plus)")).toBeEnabled();
 

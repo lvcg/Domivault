@@ -5,9 +5,9 @@ import { Bell, BellRing, CalendarDays, Home, Mail, Moon, Save, Trash2 } from "lu
 import { createClient } from "@/lib/supabase/client";
 import type { PlanTier, ReminderChannel } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
-import { RevenueCatUpgradeButton } from "@/components/billing/revenuecat-upgrade-button";
 import { useDomiVaultUser } from "@/components/auth/domivault-user-provider";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { SubscriptionStatusCard } from "@/components/billing/subscription-status-card";
 
 type SettingsState = {
   username: string;
@@ -317,16 +317,7 @@ export function SettingsPanel() {
           {message}
         </div>
 
-        <div id="plan" className="xl:col-span-2 rounded-3xl border border-slate-200/70 bg-white/85 p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">Plan</p>
-          <h3 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">{isPlusUser ? "DomiVault Plus" : "DomiVault Free"}</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            Free includes core home records. Plus unlocks warranty tracking, receipt storage, maintenance history, Google Calendar sync, vehicle repair records, expiration alerts, and export reports. Plan changes are controlled by RevenueCat billing and are not editable from profile settings.
-          </p>
-          <div className="mt-4">
-            <RevenueCatUpgradeButton className="h-11 rounded-2xl px-5" label="Upgrade with RevenueCat" showStatus />
-          </div>
-        </div>
+        <SubscriptionStatusCard fallbackIsPlus={isPlusUser} />
 
         <div className="xl:col-span-2 grid gap-3 rounded-3xl border border-slate-200/70 bg-white/85 p-4 text-sm shadow-sm dark:border-white/10 dark:bg-white/[0.05] md:grid-cols-2">
           <div>
