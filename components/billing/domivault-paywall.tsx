@@ -22,20 +22,22 @@ const valueBullets = [
   "Get ahead of renewals before warranties, filters, and registrations expire.",
 ];
 
-function packageTitle(rcPackage: Package) {
+type MembershipPlan = {
+  caption: string;
+  cta: string;
+  highlight?: boolean;
+  id: "monthly" | "yearly" | "lifetime";
+  missingMessage: string;
+  package: Package | null;
+  title: string;
+};
+
+function packageProductText(rcPackage: Package) {
   const productTitle = rcPackage.webBillingProduct.title || rcPackage.webBillingProduct.displayName;
 
-  if (rcPackage.identifier === "$rc_annual") return "Annual";
-  if (rcPackage.identifier === "$rc_monthly") return "Monthly";
   if (productTitle) return productTitle;
 
   return rcPackage.identifier.replace("$rc_", "").replace(/[-_]/g, " ");
-}
-
-function packageCaption(rcPackage: Package) {
-  if (rcPackage.identifier === "$rc_annual") return "Best for homeowners who want the full records vault.";
-  if (rcPackage.identifier === "$rc_monthly") return "Flexible access for organizing current projects.";
-  return rcPackage.webBillingProduct.description || "DomiVault Plus access.";
 }
 
 function packagePrice(rcPackage: Package) {
@@ -48,14 +50,50 @@ function packagePrice(rcPackage: Package) {
   return `${price}/${period}`;
 }
 
-function sortPackages(packages: Package[]) {
-  return [...packages].sort((a, b) => {
-    if (a.identifier === "$rc_annual") return -1;
-    if (b.identifier === "$rc_annual") return 1;
-    if (a.identifier === "$rc_monthly") return -1;
-    if (b.identifier === "$rc_monthly") return 1;
-    return a.identifier.localeCompare(b.identifier);
-  });
+function findPackage(packages: Package[], plan: MembershipPlan["id"]) {
+  return packages.find((item) => {
+    const haystack = [
+      item.identifier,
+      item.webBillingProduct.identifier,
+      item.webBillingProduct.title,
+      item.webBillingProduct.displayName,
+      item.webBillingProduct.description,
+    ].filter(Boolean).join(" ").toLowerCase();
+
+    if (plan === "monthly") return item.identifier === "$rc_monthly" || haystack.includes("month");
+    if (plan === "yearly") return item.identifier === "$rc_annual" || haystack.includes("annual") || haystack.includes("year");
+    return haystack.includes("lifetime") || haystack.includes("life") || haystack.includes("one-time") || haystack.includes("one_time");
+  }) || null;
+}
+
+function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
+  return [
+    {
+      caption: "Flexible access for organizing current projects and active repairs.",
+      cta: "Start Monthly",
+      id: "monthly",
+      missingMessage: "Add a monthly package to the current RevenueCat offering.",
+      package: findPackage(packages, "monthly"),
+      title: "Monthly",
+    },
+    {
+      caption: "Best value for homeowners who want the full records vault all year.",
+      cta: "Start Yearly",
+      highlight: true,
+      id: "yearly",
+      missingMessage: "Add a yearly or annual package to the current RevenueCat offering.",
+      package: findPackage(packages, "yearly"),
+      title: "Yearly",
+    },
+    {
+      caption: "One-time access for long-term home, vehicle, warranty, and document records.",
+      cta: "Get Lifetime",
+      id: "lifetime",
+      missingMessage: "Add a lifetime package to the current RevenueCat offering.",
+      package: findPackage(packages, "lifetime"),
+      title: "Lifetime",
+    },
+  ];
 }
 
 export function DomiVaultPaywall() {
@@ -72,7 +110,7 @@ export function DomiVaultPaywall() {
     status,
     upgrade,
   } = useRevenueCatPremium();
-  const sortedPackages = sortPackages(packages);
+  const membershipPlans = buildMembershipPlans(packages);
 
   return (
     <section className="grid gap-5 lg:grid-cols-[1fr_0.9fr]">
@@ -143,44 +181,57 @@ export function DomiVaultPaywall() {
               </div>
             )}
 
-            {!isLoading && sortedPackages.length === 0 && (
+            {!isLoading && packages.length === 0 && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-50">
-                No packages are available yet. In RevenueCat, add monthly or annual packages to the current offering for the <span className="font-semibold">premium_access</span> entitlement.
+                No packages are available yet. In RevenueCat, add Monthly, Yearly, and Lifetime packages to the current offering for the <span className="font-semibold">premium_access</span> entitlement.
               </div>
             )}
 
-            {sortedPackages.map((rcPackage) => {
-              const isAnnual = rcPackage.identifier === "$rc_annual";
+            {membershipPlans.map((plan) => {
+              const rcPackage = plan.package;
+              const isConfigured = Boolean(rcPackage);
 
               return (
                 <article
-                  key={rcPackage.identifier}
+                  key={plan.id}
                   className={cn(
                     "rounded-3xl border bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white/[0.04]",
-                    isAnnual ? "border-emerald-300 dark:border-emerald-400/30" : "border-slate-200/70 dark:border-white/10",
+                    plan.highlight ? "border-emerald-300 dark:border-emerald-400/30" : "border-slate-200/70 dark:border-white/10",
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-lg font-semibold text-slate-950 dark:text-white">{packageTitle(rcPackage)}</h3>
-                        {isAnnual && <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-200">Best value</span>}
+                        <h3 className="text-lg font-semibold text-slate-950 dark:text-white">{plan.title}</h3>
+                        {plan.highlight && <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-200">Best value</span>}
                       </div>
-                      <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{packageCaption(rcPackage)}</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{plan.caption}</p>
+                      {rcPackage && (
+                        <p className="mt-1 text-xs font-medium text-slate-400 dark:text-slate-500">
+                          RevenueCat package: {packageProductText(rcPackage)}
+                        </p>
+                      )}
                     </div>
-                    <p className="shrink-0 text-right text-lg font-semibold text-slate-950 dark:text-white">{packagePrice(rcPackage)}</p>
+                    <p className="shrink-0 text-right text-lg font-semibold text-slate-950 dark:text-white">
+                      {rcPackage ? packagePrice(rcPackage) : "Not configured"}
+                    </p>
                   </div>
+                  {!isConfigured && (
+                    <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-900 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100">
+                      {plan.missingMessage}
+                    </p>
+                  )}
                   <button
-                    disabled={isPurchasing}
+                    disabled={isPurchasing || !rcPackage}
                     onClick={() => upgrade(rcPackage)}
                     type="button"
                     className={cn(
                       "mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60",
-                      isAnnual ? "bg-emerald-600 text-white" : "bg-slate-950 text-white dark:bg-white dark:text-slate-950",
+                      plan.highlight ? "bg-emerald-600 text-white" : "bg-slate-950 text-white dark:bg-white dark:text-slate-950",
                     )}
                   >
                     {isPurchasing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {isPurchasing ? "Opening checkout..." : `Subscribe to ${packageTitle(rcPackage)}`}
+                    {isPurchasing ? "Opening checkout..." : plan.cta}
                   </button>
                 </article>
               );
