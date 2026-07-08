@@ -4,6 +4,12 @@ DomiVault is a premium home command center for keeping home improvement spending
 
 It is built as a responsive Next.js app with Supabase-ready auth, database tables, storage rules, and row-level security so each user only sees their own home records.
 
+## Live App
+
+- Home: https://domivaultapp.com
+- Privacy Policy: https://domivaultapp.com/privacy
+- Terms of Service: https://domivaultapp.com/terms
+
 ## Screenshots
 
 ![DomiVault dashboard](public/screenshots/domivault-dashboard.png)
@@ -78,7 +84,7 @@ Recommended RevenueCat setup:
 6. Mark that offering as current.
 7. Add the public Web SDK API key to Vercel as `NEXT_PUBLIC_REVENUECAT_API_KEY`.
 8. Add `NEXT_PUBLIC_REVENUECAT_ENTITLEMENT_ID=premium_access`.
-9. Configure RevenueCat webhooks to `https://your-domain.com/api/billing/revenuecat`.
+9. Configure RevenueCat webhooks to `https://domivaultapp.com/api/billing/revenuecat`.
 10. Add `REVENUECAT_WEBHOOK_AUTH_TOKEN` and/or `REVENUECAT_WEBHOOK_SIGNING_SECRET` to Vercel.
 
 The RevenueCat SDK uses the Supabase user id for signed-in users. If no user is signed in, it generates and stores a RevenueCat anonymous app user id with `Purchases.generateRevenueCatAnonymousAppUserId()`.
@@ -207,14 +213,14 @@ http://localhost:3000/auth/callback
 http://localhost:3005/auth/callback
 http://localhost:3000/auth/update-password
 http://localhost:3005/auth/update-password
-https://your-production-domain.com/auth/callback
-https://your-production-domain.com/auth/update-password
+https://domivaultapp.com/auth/callback
+https://domivaultapp.com/auth/update-password
 ```
 
 Password recovery should point to DomiVault:
 
 ```text
-https://your-production-domain.com/auth/update-password
+https://domivaultapp.com/auth/update-password
 ```
 
 For local development, use:
