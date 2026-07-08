@@ -54,7 +54,7 @@ export function DomiVaultUserProvider({ children }: { children: React.ReactNode 
       .maybeSingle();
 
     const syncedPlanTier = data?.plan_tier as PlanTier | null;
-    setPlanTier(syncedPlanTier === "vault_plus" || hasClientPlusSignal() ? "vault_plus" : "free");
+    setPlanTier(syncedPlanTier === "vault_plus" ? "vault_plus" : "free");
     setIsLoading(false);
   }, [supabase]);
 
@@ -102,4 +102,3 @@ export function useDomiVaultUser() {
 
   return context;
 }
-

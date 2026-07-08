@@ -13,9 +13,10 @@ import {
 } from "@revenuecat/purchases-js";
 
 const anonymousAppUserIdStorageKey = "domivault-revenuecat-anonymous-app-user-id";
+const fallbackTestApiKey = "test_xOKlmUuGRPMTjxxslhKaIbgdwEa";
 
 export const revenueCatConfig = {
-  apiKey: process.env.NEXT_PUBLIC_REVENUECAT_API_KEY || "test_xOKlmUuGRPMTjxxslhKaIbgdwEa",
+  apiKey: process.env.NEXT_PUBLIC_REVENUECAT_API_KEY || (process.env.NODE_ENV === "development" ? fallbackTestApiKey : ""),
   entitlementId: process.env.NEXT_PUBLIC_REVENUECAT_ENTITLEMENT_ID || "premium_access",
 };
 
@@ -89,6 +90,10 @@ function normalizeRevenueCatError(error: unknown) {
 export async function configureRevenueCat({ appUserId, email }: ConfigureRevenueCatOptions = {}) {
   assertBrowser();
 
+  if (!revenueCatConfig.apiKey) {
+    throw new Error("DomiVault Plus checkout is not configured yet.");
+  }
+
   const resolvedAppUserId = getRevenueCatAppUserId(appUserId);
   Purchases.setLogLevel(process.env.NODE_ENV === "development" ? LogLevel.Warn : LogLevel.Error);
 
@@ -154,7 +159,7 @@ export async function purchaseDomiVaultPlus({
       return {
         ok: false,
         cancelled: false,
-        message: "No DomiVault Plus packages are available yet. Confirm the current RevenueCat offering has at least one package.",
+        message: "DomiVault Plus checkout is not available yet.",
       };
     }
 

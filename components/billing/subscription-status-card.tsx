@@ -114,7 +114,7 @@ export function SubscriptionStatusCard({ fallbackIsPlus = false }: SubscriptionS
 
       {(error || isLoading) && (
         <div className="border-t border-slate-200/70 bg-slate-50/80 px-5 py-3 text-xs font-medium text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
-          {isLoading ? "Checking RevenueCat subscription status..." : error}
+          {isLoading ? "Checking subscription status..." : error}
         </div>
       )}
       <div ref={checkoutTargetRef} />

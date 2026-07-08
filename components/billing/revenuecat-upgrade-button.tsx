@@ -56,7 +56,7 @@ export function RevenueCatUpgradeButton({
       </button>
       {showStatus && (
         <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
-          {isPremium ? "DomiVault Plus is active." : error || "RevenueCat checkout uses the premium_access entitlement."}
+          {isPremium ? "DomiVault Plus is active." : error || "Unlock receipt storage, exports, warranty tracking, and calendar sync."}
         </div>
       )}
       <div ref={checkoutTargetRef} />

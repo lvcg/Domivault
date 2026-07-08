@@ -27,7 +27,6 @@ type MembershipPlan = {
   cta: string;
   highlight?: boolean;
   id: "monthly" | "yearly" | "lifetime";
-  missingMessage: string;
   package: Package | null;
   title: string;
 };
@@ -44,7 +43,7 @@ function packagePrice(rcPackage: Package) {
   const price = rcPackage.webBillingProduct.price?.formattedPrice || rcPackage.webBillingProduct.currentPrice?.formattedPrice;
   const period = rcPackage.webBillingProduct.period?.unit;
 
-  if (!price) return "Configured in RevenueCat";
+  if (!price) return "Available";
   if (!period) return price;
 
   return `${price}/${period}`;
@@ -72,7 +71,6 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
       caption: "Flexible access for organizing current projects and active repairs.",
       cta: "Start Monthly",
       id: "monthly",
-      missingMessage: "Add a monthly package to the current RevenueCat offering.",
       package: findPackage(packages, "monthly"),
       title: "Monthly",
     },
@@ -81,7 +79,6 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
       cta: "Start Yearly",
       highlight: true,
       id: "yearly",
-      missingMessage: "Add a yearly or annual package to the current RevenueCat offering.",
       package: findPackage(packages, "yearly"),
       title: "Yearly",
     },
@@ -89,7 +86,6 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
       caption: "One-time access for long-term home, vehicle, warranty, and document records.",
       cta: "Get Lifetime",
       id: "lifetime",
-      missingMessage: "Add a lifetime package to the current RevenueCat offering.",
       package: findPackage(packages, "lifetime"),
       title: "Lifetime",
     },
@@ -107,7 +103,6 @@ export function DomiVaultPaywall() {
     openManagementPortal,
     packages,
     refresh,
-    status,
     upgrade,
   } = useRevenueCatPremium();
   const membershipPlans = buildMembershipPlans(packages);
@@ -155,7 +150,7 @@ export function DomiVaultPaywall() {
             onClick={refresh}
             type="button"
             className="rounded-2xl border border-slate-200 p-2 text-slate-500 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10"
-            aria-label="Refresh RevenueCat status"
+            aria-label="Refresh membership status"
           >
             <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
           </button>
@@ -164,7 +159,7 @@ export function DomiVaultPaywall() {
         {isPremium && (
           <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
             <p className="font-semibold">DomiVault Plus is active.</p>
-            <p className="mt-1">Entitlement: {status?.entitlementId || "premium_access"}</p>
+            <p className="mt-1">Your paid home vault features are unlocked.</p>
             {managementURL && (
               <button onClick={openManagementPortal} type="button" className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white">
                 Manage subscription
@@ -177,13 +172,7 @@ export function DomiVaultPaywall() {
           <div className="mt-5 grid gap-3">
             {isLoading && (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                Checking RevenueCat offerings...
-              </div>
-            )}
-
-            {!isLoading && packages.length === 0 && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-50">
-                No packages are available yet. In RevenueCat, add Monthly, Yearly, and Lifetime packages to the current offering for the <span className="font-semibold">premium_access</span> entitlement.
+                Checking membership options...
               </div>
             )}
 
@@ -206,19 +195,15 @@ export function DomiVaultPaywall() {
                         {plan.highlight && <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-200">Best value</span>}
                       </div>
                       <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{plan.caption}</p>
-                      {rcPackage && (
-                        <p className="mt-1 text-xs font-medium text-slate-400 dark:text-slate-500">
-                          RevenueCat package: {packageProductText(rcPackage)}
-                        </p>
-                      )}
+                      {rcPackage && <p className="mt-1 text-xs font-medium text-slate-400 dark:text-slate-500">{packageProductText(rcPackage)}</p>}
                     </div>
                     <p className="shrink-0 text-right text-lg font-semibold text-slate-950 dark:text-white">
-                      {rcPackage ? packagePrice(rcPackage) : "Not configured"}
+                      {rcPackage ? packagePrice(rcPackage) : "Coming soon"}
                     </p>
                   </div>
                   {!isConfigured && (
-                    <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-900 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100">
-                      {plan.missingMessage}
+                    <p className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                      This membership option is being prepared for checkout.
                     </p>
                   )}
                   <button
@@ -231,7 +216,7 @@ export function DomiVaultPaywall() {
                     )}
                   >
                     {isPurchasing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {isPurchasing ? "Opening checkout..." : plan.cta}
+                    {isPurchasing ? "Opening checkout..." : rcPackage ? plan.cta : "Coming soon"}
                   </button>
                 </article>
               );
