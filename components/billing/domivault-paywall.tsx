@@ -28,6 +28,7 @@ type MembershipPlan = {
   highlight?: boolean;
   id: "monthly" | "yearly" | "lifetime";
   package: Package | null;
+  price: string;
   title: string;
 };
 
@@ -37,16 +38,6 @@ function packageProductText(rcPackage: Package) {
   if (productTitle) return productTitle;
 
   return rcPackage.identifier.replace("$rc_", "").replace(/[-_]/g, " ");
-}
-
-function packagePrice(rcPackage: Package) {
-  const price = rcPackage.webBillingProduct.price?.formattedPrice || rcPackage.webBillingProduct.currentPrice?.formattedPrice;
-  const period = rcPackage.webBillingProduct.period?.unit;
-
-  if (!price) return "Available";
-  if (!period) return price;
-
-  return `${price}/${period}`;
 }
 
 function findPackage(packages: Package[], plan: MembershipPlan["id"]) {
@@ -72,6 +63,7 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
       cta: "Start Monthly",
       id: "monthly",
       package: findPackage(packages, "monthly"),
+      price: "$9.99/mo",
       title: "Monthly",
     },
     {
@@ -80,6 +72,7 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
       highlight: true,
       id: "yearly",
       package: findPackage(packages, "yearly"),
+      price: "$69.99/yr",
       title: "Yearly",
     },
     {
@@ -87,6 +80,7 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
       cta: "Get Lifetime",
       id: "lifetime",
       package: findPackage(packages, "lifetime"),
+      price: "$99.99",
       title: "Lifetime",
     },
   ];
@@ -178,7 +172,6 @@ export function DomiVaultPaywall() {
 
             {membershipPlans.map((plan) => {
               const rcPackage = plan.package;
-              const isConfigured = Boolean(rcPackage);
 
               return (
                 <article
@@ -198,14 +191,9 @@ export function DomiVaultPaywall() {
                       {rcPackage && <p className="mt-1 text-xs font-medium text-slate-400 dark:text-slate-500">{packageProductText(rcPackage)}</p>}
                     </div>
                     <p className="shrink-0 text-right text-lg font-semibold text-slate-950 dark:text-white">
-                      {rcPackage ? packagePrice(rcPackage) : "Coming soon"}
+                      {plan.price}
                     </p>
                   </div>
-                  {!isConfigured && (
-                    <p className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                      This membership option is being prepared for checkout.
-                    </p>
-                  )}
                   <button
                     disabled={isPurchasing || !rcPackage}
                     onClick={() => upgrade(rcPackage)}
@@ -216,7 +204,7 @@ export function DomiVaultPaywall() {
                     )}
                   >
                     {isPurchasing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {isPurchasing ? "Opening checkout..." : rcPackage ? plan.cta : "Coming soon"}
+                    {isPurchasing ? "Opening checkout..." : plan.cta}
                   </button>
                 </article>
               );
