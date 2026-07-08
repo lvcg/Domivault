@@ -30,10 +30,8 @@ Recommended recording flow:
 4. Export the recording as `public/demo/domivault-walkthrough.mp4`.
 5. Add this block to the README:
 
-```html
-<video src="public/demo/domivault-walkthrough.mp4" controls width="100%"></video>
-```
 
+<video src="public/demo/domivault-walkthrough.mp4" controls width="100%"></video>
 ## Core Features
 
 - Personalized Home Command Center that greets the user by username and shows the last saved timestamp.
