@@ -20,17 +20,6 @@ It is built as a responsive Next.js app with Supabase-ready auth, database table
 
 ## Demo Video
 
-A video walkthrough is not committed yet. The app is ready for a short recording that covers login, dashboard metrics, expenses, appliance warranty records, vehicle repairs, reports, and settings.
-
-Recommended recording flow:
-
-1. Open `/login`.
-2. Sign in or use local preview mode.
-3. Show `/dashboard`, `/expenses`, `/maintenance`, `/appliances`, `/vehicles`, `/reports`, and `/settings`.
-4. Export the recording as `public/demo/domivault-walkthrough.mp4`.
-5. Add this block to the README:
-
-
 <video src="public/demo/domivault-walkthrough.mp4" controls width="100%"></video>
 ## Core Features
 
