@@ -7,6 +7,7 @@ import {
   checkUserPremiumStatus,
   fetchRevenueCatOfferings,
   purchaseDomiVaultPlus,
+  domiVaultPlusPackageIds,
   type PremiumStatus,
 } from "@/lib/revenuecat-purchases";
 
@@ -131,9 +132,9 @@ export function useRevenueCatPremium() {
   return {
     ...state,
     checkoutTargetRef,
-    monthlyPackage: state.packages.find((item) => item.identifier === "$rc_monthly" || /month/i.test(item.identifier)) || state.packages[0] || null,
-    annualPackage: state.packages.find((item) => item.identifier === "$rc_annual" || /annual|year/i.test(item.identifier)) || null,
-    lifetimePackage: state.packages.find((item) => /lifetime|life|one[-_]?time/i.test(item.identifier)) || null,
+    monthlyPackage: state.packages.find((item) => item.identifier === domiVaultPlusPackageIds.monthly || item.webBillingProduct.identifier === domiVaultPlusPackageIds.monthly || item.identifier === "$rc_monthly" || /month/i.test(item.identifier)) || state.packages[0] || null,
+    annualPackage: state.packages.find((item) => item.identifier === domiVaultPlusPackageIds.yearly || item.webBillingProduct.identifier === domiVaultPlusPackageIds.yearly || item.identifier === "$rc_annual" || /annual|year/i.test(item.identifier)) || null,
+    lifetimePackage: state.packages.find((item) => item.identifier === domiVaultPlusPackageIds.lifetime || item.webBillingProduct.identifier === domiVaultPlusPackageIds.lifetime || /lifetime|life|one[-_]?time/i.test(item.identifier)) || null,
     openManagementPortal,
     refresh: loadRevenueCatState,
     upgrade,

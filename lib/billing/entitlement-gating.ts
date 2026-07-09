@@ -1,6 +1,7 @@
 import type { PremiumStatus } from "@/lib/revenuecat-purchases";
+import { defaultRevenueCatEntitlementId, domiVaultPlusPackageIds } from "@/lib/billing/revenuecat-config";
 
-export const premiumEntitlementId = "premium_access";
+export const premiumEntitlementId = defaultRevenueCatEntitlementId;
 
 export const premiumFeatureIds = [
   "document_vault",
@@ -81,15 +82,15 @@ export function getProductIdentifierFromEntitlement(entitlement: unknown) {
 export function getSubscriptionTierFromProduct(productIdentifier: string | null): SubscriptionTierLabel {
   const normalized = (productIdentifier || "").toLowerCase();
 
-  if (normalized.includes("lifetime") || normalized.includes("life") || normalized.includes("one_time") || normalized.includes("one-time")) {
+  if (normalized === domiVaultPlusPackageIds.lifetime || normalized.includes("lifetime") || normalized.includes("life") || normalized.includes("one_time") || normalized.includes("one-time")) {
     return "Lifetime Access";
   }
 
-  if (normalized.includes("annual") || normalized.includes("year") || normalized.includes("$rc_annual")) {
+  if (normalized === domiVaultPlusPackageIds.yearly || normalized.includes("annual") || normalized.includes("year") || normalized.includes("$rc_annual")) {
     return "Yearly Subscription";
   }
 
-  if (normalized.includes("month") || normalized.includes("$rc_monthly")) {
+  if (normalized === domiVaultPlusPackageIds.monthly || normalized.includes("month") || normalized.includes("$rc_monthly")) {
     return "Monthly Subscription";
   }
 

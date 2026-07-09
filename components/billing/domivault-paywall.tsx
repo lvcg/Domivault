@@ -3,6 +3,7 @@
 import type { Package } from "@revenuecat/purchases-js";
 import { Check, Crown, Loader2, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 import { useRevenueCatPremium } from "@/hooks/use-revenuecat-premium";
+import { domiVaultPlusPackageIds } from "@/lib/revenuecat-purchases";
 import { cn } from "@/lib/utils";
 
 const includedFeatures = [
@@ -50,9 +51,27 @@ function findPackage(packages: Package[], plan: MembershipPlan["id"]) {
       item.webBillingProduct.description,
     ].filter(Boolean).join(" ").toLowerCase();
 
-    if (plan === "monthly") return item.identifier === "$rc_monthly" || haystack.includes("month");
-    if (plan === "yearly") return item.identifier === "$rc_annual" || haystack.includes("annual") || haystack.includes("year");
-    return haystack.includes("lifetime") || haystack.includes("life") || haystack.includes("one-time") || haystack.includes("one_time");
+    if (plan === "monthly") {
+      return item.identifier === domiVaultPlusPackageIds.monthly
+        || item.webBillingProduct.identifier === domiVaultPlusPackageIds.monthly
+        || item.identifier === "$rc_monthly"
+        || haystack.includes("month");
+    }
+
+    if (plan === "yearly") {
+      return item.identifier === domiVaultPlusPackageIds.yearly
+        || item.webBillingProduct.identifier === domiVaultPlusPackageIds.yearly
+        || item.identifier === "$rc_annual"
+        || haystack.includes("annual")
+        || haystack.includes("year");
+    }
+
+    return item.identifier === domiVaultPlusPackageIds.lifetime
+      || item.webBillingProduct.identifier === domiVaultPlusPackageIds.lifetime
+      || haystack.includes("lifetime")
+      || haystack.includes("life")
+      || haystack.includes("one-time")
+      || haystack.includes("one_time");
   }) || null;
 }
 
