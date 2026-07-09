@@ -1,7 +1,7 @@
 "use client";
 
 import type { Package } from "@revenuecat/purchases-js";
-import { Check, Crown, Loader2, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, Crown, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 import { useRevenueCatPremium } from "@/hooks/use-revenuecat-premium";
 import { domiVaultPlusPackageIds } from "@/lib/revenuecat-purchases";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,8 @@ const valueBullets = [
   "Preserve maintenance and vehicle history in one searchable vault.",
   "Get ahead of renewals before warranties, filters, and registrations expire.",
 ];
+
+const revenueCatCheckoutUrl = "https://pay.rev.cat/flykjidljkhezmkz/";
 
 type MembershipPlan = {
   caption: string;
@@ -107,16 +109,13 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
 
 export function DomiVaultPaywall() {
   const {
-    checkoutTargetRef,
     error,
     isLoading,
     isPremium,
-    isPurchasing,
     managementURL,
     openManagementPortal,
     packages,
     refresh,
-    upgrade,
   } = useRevenueCatPremium();
   const membershipPlans = buildMembershipPlans(packages);
 
@@ -213,18 +212,16 @@ export function DomiVaultPaywall() {
                       {plan.price}
                     </p>
                   </div>
-                  <button
-                    disabled={isPurchasing || !rcPackage}
-                    onClick={() => upgrade(rcPackage)}
-                    type="button"
+                  <a
+                    href={revenueCatCheckoutUrl}
                     className={cn(
-                      "mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60",
+                      "mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
                       plan.highlight ? "bg-emerald-600 text-white" : "bg-slate-950 text-white dark:bg-white dark:text-slate-950",
                     )}
                   >
-                    {isPurchasing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {isPurchasing ? "Opening checkout..." : plan.cta}
-                  </button>
+                    <Sparkles className="h-4 w-4" />
+                    {plan.cta}
+                  </a>
                 </article>
               );
             })}
@@ -237,7 +234,6 @@ export function DomiVaultPaywall() {
           </p>
         )}
 
-        <div ref={checkoutTargetRef} />
       </div>
     </section>
   );
