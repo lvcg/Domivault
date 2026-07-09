@@ -23,10 +23,9 @@ const valueBullets = [
   "Get ahead of renewals before warranties, filters, and registrations expire.",
 ];
 
-const revenueCatCheckoutUrl = "https://pay.rev.cat/flykjidljkhezmkz/";
-
 type MembershipPlan = {
   caption: string;
+  checkoutUrl?: string;
   cta: string;
   highlight?: boolean;
   id: "monthly" | "yearly" | "lifetime";
@@ -81,6 +80,7 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
   return [
     {
       caption: "Flexible access for organizing current projects and active repairs.",
+      checkoutUrl: process.env.NEXT_PUBLIC_REVENUECAT_MONTHLY_URL,
       cta: "Start Monthly",
       id: "monthly",
       package: findPackage(packages, "monthly"),
@@ -89,6 +89,7 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
     },
     {
       caption: "Best value for homeowners who want the full records vault all year.",
+      checkoutUrl: process.env.NEXT_PUBLIC_REVENUECAT_YEARLY_URL,
       cta: "Start Yearly",
       highlight: true,
       id: "yearly",
@@ -98,6 +99,7 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
     },
     {
       caption: "One-time access for long-term home, vehicle, warranty, and document records.",
+      checkoutUrl: process.env.NEXT_PUBLIC_REVENUECAT_LIFETIME_URL,
       cta: "Get Lifetime",
       id: "lifetime",
       package: findPackage(packages, "lifetime"),
@@ -190,6 +192,7 @@ export function DomiVaultPaywall() {
 
             {membershipPlans.map((plan) => {
               const rcPackage = plan.package;
+              const checkoutUrl = plan.checkoutUrl?.trim();
 
               return (
                 <article
@@ -212,16 +215,22 @@ export function DomiVaultPaywall() {
                       {plan.price}
                     </p>
                   </div>
-                  <a
-                    href={revenueCatCheckoutUrl}
-                    className={cn(
-                      "mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
-                      plan.highlight ? "bg-emerald-600 text-white" : "bg-slate-950 text-white dark:bg-white dark:text-slate-950",
-                    )}
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    {plan.cta}
-                  </a>
+                  {checkoutUrl ? (
+                    <a
+                      href={checkoutUrl}
+                      className={cn(
+                        "mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
+                        plan.highlight ? "bg-emerald-600 text-white" : "bg-slate-950 text-white dark:bg-white dark:text-slate-950",
+                      )}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      {plan.cta}
+                    </a>
+                  ) : (
+                    <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold leading-5 text-amber-900 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100">
+                      Checkout link needed for this plan.
+                    </div>
+                  )}
                 </article>
               );
             })}
