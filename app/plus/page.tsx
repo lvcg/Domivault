@@ -48,7 +48,7 @@ const plusFeatures = [
 export default function PlusPage() {
   return (
     <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl space-y-5">
+      <div className="mx-auto max-w-5xl space-y-5">
         <nav className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-white/70 bg-white/80 p-4 shadow-glass backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06]">
           <Link href="/" className="text-lg font-semibold tracking-tight text-slate-950 dark:text-white">DomiVault</Link>
           <div className="flex flex-wrap gap-3 text-sm font-semibold text-slate-600 dark:text-slate-300">
@@ -60,14 +60,16 @@ export default function PlusPage() {
 
         <DomiVaultPaywall />
 
-        <section className="grid gap-4 md:grid-cols-2">
+        <section className="mx-auto grid max-w-5xl gap-3 md:grid-cols-2">
           {plusFeatures.map((feature) => (
-            <article key={feature.title} className="rounded-3xl border border-slate-200/70 bg-white/85 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-white/[0.05]">
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+            <article key={feature.title} className="flex gap-4 rounded-3xl border border-slate-200/70 bg-white/85 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-white/[0.05]">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white dark:bg-white dark:text-slate-950">
                 <feature.icon className="h-5 w-5" />
               </div>
-              <h2 className="text-lg font-semibold text-slate-950 dark:text-white">{feature.title}</h2>
-              <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-400">{feature.description}</p>
+              <div>
+                <h2 className="text-base font-semibold text-slate-950 dark:text-white">{feature.title}</h2>
+                <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{feature.description}</p>
+              </div>
             </article>
           ))}
         </section>
