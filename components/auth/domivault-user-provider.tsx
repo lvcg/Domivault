@@ -61,7 +61,17 @@ export function DomiVaultUserProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     refreshUserState();
 
-    const handlePlanSignal = () => {
+    const handlePlanSignal = (event: Event) => {
+      if ("detail" in event && typeof event.detail === "object" && event.detail) {
+        const { isPremium } = event.detail as { isPremium?: boolean };
+
+        if (typeof isPremium === "boolean") {
+          setPlanTier(isPremium ? "vault_plus" : "free");
+          setIsLoading(false);
+          return;
+        }
+      }
+
       refreshUserState();
     };
     window.addEventListener(plusEntitlementEvent, handlePlanSignal);

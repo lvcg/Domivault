@@ -6,6 +6,7 @@ import { CalendarCheck, Car, ClipboardList, FileQuestion, FileText, Gauge, Home,
 import { createClient } from "@/lib/supabase/client";
 import { formatTimestamp } from "@/lib/utils";
 import { useDomiVaultUser } from "@/components/auth/domivault-user-provider";
+import { LockedFeatureBadge } from "@/components/billing/feature-gate";
 import { PlanStatusBadge } from "@/components/billing/plan-status-badge";
 
 const navigation = [
@@ -14,10 +15,10 @@ const navigation = [
   { label: "Expenses", href: "/expenses", icon: ReceiptText },
   { label: "Maintenance", href: "/maintenance", icon: CalendarCheck },
   { label: "Appliances", href: "/appliances", icon: Refrigerator },
-  { label: "Vehicles", href: "/vehicles", icon: Car },
-  { label: "Vendors", href: "/vendors", icon: UsersRound },
-  { label: "Scanner", href: "/scanner", icon: ScanLine },
-  { label: "Reports", href: "/reports", icon: FileText },
+  { label: "Vehicles", href: "/vehicles", icon: Car, plus: true },
+  { label: "Vendors", href: "/vendors", icon: UsersRound, plus: true },
+  { label: "Scanner", href: "/scanner", icon: ScanLine, plus: true },
+  { label: "Reports", href: "/reports", icon: FileText, plus: true },
   { label: "DomiVault Plus", href: "/plus", icon: Sparkles },
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "FAQ", href: "/faq", icon: FileQuestion },
@@ -150,7 +151,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className="group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-slate-950 hover:text-white dark:text-slate-300 dark:hover:bg-white dark:hover:text-slate-950"
               >
                 <item.icon className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
-                {item.label}
+                <span className="min-w-0 flex-1">{item.label}</span>
+                {item.plus && !isPlusUser && <LockedFeatureBadge className="group-hover:border-white/20 group-hover:bg-white/10 group-hover:text-white dark:group-hover:border-slate-900/20 dark:group-hover:bg-slate-950/10 dark:group-hover:text-slate-950" />}
               </Link>
             ))}
             {isSignedIn && (

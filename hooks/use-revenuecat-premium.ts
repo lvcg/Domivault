@@ -71,7 +71,7 @@ export function useRevenueCatPremium() {
         } else {
           window.localStorage.removeItem(plusEntitlementStorageKey);
         }
-        window.dispatchEvent(new Event(plusEntitlementEvent));
+        window.dispatchEvent(new CustomEvent(plusEntitlementEvent, { detail: { isPremium: status.isPremium } }));
       }
     } catch (error) {
       setState((current) => ({
@@ -116,7 +116,7 @@ export function useRevenueCatPremium() {
 
     if (result.premiumStatus.isPremium && typeof window !== "undefined") {
       window.localStorage.setItem(plusEntitlementStorageKey, "true");
-      window.dispatchEvent(new Event(plusEntitlementEvent));
+      window.dispatchEvent(new CustomEvent(plusEntitlementEvent, { detail: { isPremium: true } }));
     }
 
     return result;
