@@ -194,3 +194,34 @@ export async function purchaseDomiVaultPlus({
     };
   }
 }
+
+export async function presentDomiVaultPaywall({
+  appUserId,
+  email,
+  htmlTarget,
+}: ConfigureRevenueCatOptions & {
+  htmlTarget?: HTMLElement | null;
+} = {}): Promise<RevenueCatPurchaseState> {
+  try {
+    const purchases = await configureRevenueCat({ appUserId, email });
+    const result = await purchases.presentPaywall({
+      htmlTarget: htmlTarget || undefined,
+    });
+    const premiumStatus = await checkUserPremiumStatus({ appUserId, email });
+
+    return {
+      ok: true,
+      cancelled: false,
+      result,
+      premiumStatus,
+    };
+  } catch (error) {
+    const normalized = normalizeRevenueCatError(error);
+
+    return {
+      ok: false,
+      cancelled: normalized.cancelled,
+      message: normalized.cancelled ? "Purchase canceled." : normalized.message,
+    };
+  }
+}

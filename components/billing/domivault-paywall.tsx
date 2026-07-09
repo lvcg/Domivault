@@ -1,7 +1,7 @@
 "use client";
 
 import type { Package } from "@revenuecat/purchases-js";
-import { Check, Crown, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, Crown, Loader2, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 import { useRevenueCatPremium } from "@/hooks/use-revenuecat-premium";
 import { domiVaultPlusPackageIds } from "@/lib/revenuecat-purchases";
 import { cn } from "@/lib/utils";
@@ -25,7 +25,6 @@ const valueBullets = [
 
 type MembershipPlan = {
   caption: string;
-  checkoutUrl?: string;
   cta: string;
   highlight?: boolean;
   id: "monthly" | "yearly" | "lifetime";
@@ -80,7 +79,6 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
   return [
     {
       caption: "Flexible access for organizing current projects and active repairs.",
-      checkoutUrl: process.env.NEXT_PUBLIC_REVENUECAT_MONTHLY_URL,
       cta: "Start Monthly",
       id: "monthly",
       package: findPackage(packages, "monthly"),
@@ -89,7 +87,6 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
     },
     {
       caption: "Best value for homeowners who want the full records vault all year.",
-      checkoutUrl: process.env.NEXT_PUBLIC_REVENUECAT_YEARLY_URL,
       cta: "Start Yearly",
       highlight: true,
       id: "yearly",
@@ -99,7 +96,6 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
     },
     {
       caption: "One-time access for long-term home, vehicle, warranty, and document records.",
-      checkoutUrl: process.env.NEXT_PUBLIC_REVENUECAT_LIFETIME_URL,
       cta: "Get Lifetime",
       id: "lifetime",
       package: findPackage(packages, "lifetime"),
@@ -111,11 +107,14 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
 
 export function DomiVaultPaywall() {
   const {
+    checkoutTargetRef,
     error,
     isLoading,
     isPremium,
+    isPurchasing,
     managementURL,
     openManagementPortal,
+    openPaywall,
     packages,
     refresh,
   } = useRevenueCatPremium();
@@ -192,7 +191,6 @@ export function DomiVaultPaywall() {
 
             {membershipPlans.map((plan) => {
               const rcPackage = plan.package;
-              const checkoutUrl = plan.checkoutUrl?.trim();
 
               return (
                 <article
@@ -215,22 +213,18 @@ export function DomiVaultPaywall() {
                       {plan.price}
                     </p>
                   </div>
-                  {checkoutUrl ? (
-                    <a
-                      href={checkoutUrl}
-                      className={cn(
-                        "mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
-                        plan.highlight ? "bg-emerald-600 text-white" : "bg-slate-950 text-white dark:bg-white dark:text-slate-950",
-                      )}
-                    >
-                      <Sparkles className="h-4 w-4" />
-                      {plan.cta}
-                    </a>
-                  ) : (
-                    <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold leading-5 text-amber-900 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100">
-                      Checkout link needed for this plan.
-                    </div>
-                  )}
+                  <button
+                    disabled={isPurchasing}
+                    onClick={openPaywall}
+                    type="button"
+                    className={cn(
+                      "mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60",
+                      plan.highlight ? "bg-emerald-600 text-white" : "bg-slate-950 text-white dark:bg-white dark:text-slate-950",
+                    )}
+                  >
+                    {isPurchasing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {isPurchasing ? "Opening checkout..." : plan.cta}
+                  </button>
                 </article>
               );
             })}
@@ -243,6 +237,7 @@ export function DomiVaultPaywall() {
           </p>
         )}
 
+        <div ref={checkoutTargetRef} className="mt-4" />
       </div>
     </section>
   );

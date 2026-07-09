@@ -7,6 +7,7 @@ import {
   checkUserPremiumStatus,
   fetchRevenueCatOfferings,
   purchaseDomiVaultPlus,
+  presentDomiVaultPaywall,
   domiVaultPlusPackageIds,
   type PremiumStatus,
 } from "@/lib/revenuecat-purchases";
@@ -123,6 +124,41 @@ export function useRevenueCatPremium() {
     return result;
   }, [state.appUserId, state.email]);
 
+  const openPaywall = useCallback(async () => {
+    setState((current) => ({ ...current, error: null, isPurchasing: true }));
+
+    const result = await presentDomiVaultPaywall({
+      appUserId: state.appUserId,
+      email: state.email,
+      htmlTarget: checkoutTargetRef.current,
+    });
+
+    if (!result.ok) {
+      setState((current) => ({
+        ...current,
+        error: result.cancelled ? null : result.message,
+        isPurchasing: false,
+      }));
+      return result;
+    }
+
+    setState((current) => ({
+      ...current,
+      error: null,
+      isPremium: result.premiumStatus.isPremium,
+      isPurchasing: false,
+      managementURL: result.premiumStatus.managementURL,
+      status: result.premiumStatus,
+    }));
+
+    if (result.premiumStatus.isPremium && typeof window !== "undefined") {
+      window.localStorage.setItem(plusEntitlementStorageKey, "true");
+      window.dispatchEvent(new CustomEvent(plusEntitlementEvent, { detail: { isPremium: true } }));
+    }
+
+    return result;
+  }, [state.appUserId, state.email]);
+
   const openManagementPortal = useCallback(() => {
     if (state.managementURL) {
       window.open(state.managementURL, "_blank", "noopener,noreferrer");
@@ -136,6 +172,7 @@ export function useRevenueCatPremium() {
     annualPackage: state.packages.find((item) => item.identifier === domiVaultPlusPackageIds.yearly || item.webBillingProduct.identifier === domiVaultPlusPackageIds.yearly || item.identifier === "$rc_annual" || /annual|year/i.test(item.identifier)) || null,
     lifetimePackage: state.packages.find((item) => item.identifier === domiVaultPlusPackageIds.lifetime || item.webBillingProduct.identifier === domiVaultPlusPackageIds.lifetime || /lifetime|life|one[-_]?time/i.test(item.identifier)) || null,
     openManagementPortal,
+    openPaywall,
     refresh: loadRevenueCatState,
     upgrade,
   };
