@@ -208,9 +208,16 @@ create table if not exists public.maintenance_tasks (
   reminder_date date,
   notify_days_before integer not null default 3 check (notify_days_before >= 0),
   last_notification_at timestamptz,
+  google_calendar_event_id text,
+  google_calendar_html_link text,
+  google_calendar_synced_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.maintenance_tasks add column if not exists google_calendar_event_id text;
+alter table public.maintenance_tasks add column if not exists google_calendar_html_link text;
+alter table public.maintenance_tasks add column if not exists google_calendar_synced_at timestamptz;
 
 create table if not exists public.service_events (
   id uuid primary key default gen_random_uuid(),
@@ -242,6 +249,18 @@ create table if not exists public.reminders (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   check (maintenance_task_id is not null or appliance_id is not null)
+);
+
+create table if not exists public.google_calendar_tokens (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  access_token text not null,
+  refresh_token text,
+  expires_at timestamptz,
+  scope text,
+  token_type text,
+  google_email text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists public.vault_documents (
@@ -392,6 +411,11 @@ create trigger maintenance_tasks_set_updated_at
 before update on public.maintenance_tasks
 for each row execute function public.set_updated_at();
 
+drop trigger if exists google_calendar_tokens_set_updated_at on public.google_calendar_tokens;
+create trigger google_calendar_tokens_set_updated_at
+before update on public.google_calendar_tokens
+for each row execute function public.set_updated_at();
+
 drop trigger if exists service_events_set_updated_at on public.service_events;
 create trigger service_events_set_updated_at
 before update on public.service_events
@@ -430,8 +454,10 @@ create index if not exists appliances_user_next_service_idx on public.appliances
 create index if not exists maintenance_user_due_idx on public.maintenance_tasks(user_id, due_date);
 create index if not exists maintenance_user_status_idx on public.maintenance_tasks(user_id, status);
 create index if not exists maintenance_vendor_idx on public.maintenance_tasks(vendor_id);
+create index if not exists maintenance_google_calendar_event_idx on public.maintenance_tasks(user_id, google_calendar_event_id);
 create index if not exists service_events_user_date_idx on public.service_events(user_id, service_date desc);
 create index if not exists reminders_user_status_time_idx on public.reminders(user_id, status, reminder_at);
+create index if not exists google_calendar_tokens_updated_idx on public.google_calendar_tokens(updated_at desc);
 create index if not exists vault_documents_user_type_idx on public.vault_documents(user_id, document_type);
 create index if not exists vault_documents_user_date_idx on public.vault_documents(user_id, document_date desc);
 create index if not exists vehicles_user_status_idx on public.vehicles(user_id, status);
@@ -448,6 +474,7 @@ alter table public.appliances enable row level security;
 alter table public.maintenance_tasks enable row level security;
 alter table public.service_events enable row level security;
 alter table public.reminders enable row level security;
+alter table public.google_calendar_tokens enable row level security;
 alter table public.vault_documents enable row level security;
 alter table public.vehicles enable row level security;
 alter table public.vehicle_service_events enable row level security;

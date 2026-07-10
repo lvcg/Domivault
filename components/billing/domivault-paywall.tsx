@@ -24,12 +24,16 @@ const valueBullets = [
 ];
 
 type MembershipPlan = {
+  badge?: "Highly Recommended" | "Most Popular";
   caption: string;
   cta: string;
   highlight?: boolean;
   id: "monthly" | "yearly" | "lifetime";
   package: Package | null;
   price: string;
+  reassurance: string;
+  savings?: string;
+  terms: string;
   title: string;
 };
 
@@ -79,27 +83,35 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
   return [
     {
       caption: "Flexible access for organizing current projects and active repairs.",
-      cta: "Start Monthly",
+      cta: "Start 7-Day Free Trial",
       id: "monthly",
       package: findPackage(packages, "monthly"),
       price: "$9.99/mo",
+      reassurance: "Cancel anytime.",
+      terms: "7-day free trial, then $9.99/month. Cancel anytime.",
       title: "Monthly",
     },
     {
-      caption: "Best value for homeowners who want the full records vault all year.",
-      cta: "Start Yearly",
-      highlight: true,
+      caption: "Annual access for homeowners who want the full records vault all year.",
+      cta: "Start 7-Day Free Trial",
       id: "yearly",
       package: findPackage(packages, "yearly"),
       price: "$69.99/yr",
+      reassurance: "Cancel anytime.",
+      savings: "Save $49.89 vs monthly",
+      terms: "7-day free trial, then $69.99/year. Cancel anytime.",
       title: "Yearly",
     },
     {
+      badge: "Highly Recommended",
       caption: "One-time access for long-term home, vehicle, warranty, and document records.",
-      cta: "Get Lifetime",
+      cta: "Start 7-Day Free Trial",
+      highlight: true,
       id: "lifetime",
       package: findPackage(packages, "lifetime"),
       price: "$99.99",
+      reassurance: "Cancel anytime.",
+      terms: "7-day free trial, then $99.99. Cancel anytime.",
       title: "Lifetime",
     },
   ];
@@ -114,9 +126,9 @@ export function DomiVaultPaywall() {
     isPurchasing,
     managementURL,
     openManagementPortal,
-    openPaywall,
     packages,
     refresh,
+    upgrade,
   } = useRevenueCatPremium();
   const membershipPlans = buildMembershipPlans(packages);
 
@@ -205,7 +217,7 @@ export function DomiVaultPaywall() {
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-lg font-semibold text-slate-950 dark:text-white">{plan.title}</h3>
-                        {plan.highlight && <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-200">Best value</span>}
+                        {plan.badge && <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-200">{plan.badge}</span>}
                       </div>
                       <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{plan.caption}</p>
                       {rcPackage && <p className="mt-1 text-xs font-medium text-slate-400 dark:text-slate-500">{packageProductText(rcPackage)}</p>}
@@ -213,19 +225,26 @@ export function DomiVaultPaywall() {
                     <p className="text-2xl font-semibold text-slate-950 dark:text-white">
                       {plan.price}
                     </p>
+                    {plan.savings && (
+                      <p className="inline-flex w-fit rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-400/10 dark:text-blue-200">
+                        {plan.savings}
+                      </p>
+                    )}
                   </div>
                   <button
-                    disabled={isPurchasing}
-                    onClick={openPaywall}
+                    disabled={isPurchasing || !rcPackage}
+                    onClick={() => upgrade(rcPackage)}
                     type="button"
                     className={cn(
                       "mt-auto inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60",
-                      plan.highlight ? "bg-emerald-600 text-white" : "bg-slate-950 text-white dark:bg-white dark:text-slate-950",
+                      "bg-blue-600 text-white hover:bg-blue-500",
                     )}
                   >
                     {isPurchasing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {isPurchasing ? "Opening checkout..." : plan.cta}
+                    {isPurchasing ? "Opening checkout..." : rcPackage ? plan.cta : "Plan unavailable"}
                   </button>
+                  <p className="mt-2 text-center text-xs leading-5 text-slate-500 dark:text-slate-400">{plan.terms}</p>
+                  <p className="mt-1 text-center text-xs font-semibold text-slate-700 dark:text-slate-200">{plan.reassurance}</p>
                 </article>
               );
             })}

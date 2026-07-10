@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { usePlanTier } from "@/hooks/use-plan-tier";
 import type { VaultDocument, VaultDocumentType } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
+import { extractBrowserOcr } from "@/lib/ocr/browser-tesseract";
+import { isPdfFile } from "@/lib/ocr/browser-pdf-render";
 
 type LinkedTable = "expense" | "appliance" | "maintenance_task" | "service_event";
 
@@ -153,6 +155,19 @@ export function DocumentUploadCard({
   }, [isPlus, linkedId, linkedTable, locked, supabase, title, type]);
 
   const runOcr = async (file: File): Promise<OcrResult> => {
+    if (isPdfFile(file)) {
+      const result = await extractBrowserOcr(file);
+
+      return {
+        text: result.text,
+        status: result.text ? "processed" : "unavailable",
+        extracted: result.extracted,
+        message: result.text
+          ? `PDF OCR extracted and cleaned text from ${result.pageCount} page${result.pageCount === 1 ? "" : "s"}.`
+          : "PDF OCR completed but no readable text was detected.",
+      };
+    }
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("type", type);

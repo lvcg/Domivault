@@ -47,6 +47,9 @@ type MaintenanceTaskRow = {
   vendor_id: string | null;
   priority: MaintenancePriority;
   status: MaintenanceStatus;
+  google_calendar_event_id: string | null;
+  google_calendar_html_link: string | null;
+  google_calendar_synced_at: string | null;
 };
 
 type VendorRow = {
@@ -54,7 +57,7 @@ type VendorRow = {
   company: string;
 };
 
-const taskSelect = "id,title,area,instructions,recurrence_interval_months,due_date,reminder_date,notification_channel,vendor_id,priority,status";
+const taskSelect = "id,title,area,instructions,recurrence_interval_months,due_date,reminder_date,notification_channel,vendor_id,priority,status,google_calendar_event_id,google_calendar_html_link,google_calendar_synced_at";
 const localMaintenanceTasksKey = "domivault-local-maintenance-tasks";
 
 function loadLocalMaintenanceTasks() {
@@ -93,6 +96,9 @@ function mapTask(row: MaintenanceTaskRow): MaintenanceTask {
     assignedVendorId: row.vendor_id || undefined,
     priority: row.priority,
     status: row.status,
+    googleCalendarEventId: row.google_calendar_event_id || undefined,
+    googleCalendarHtmlLink: row.google_calendar_html_link || undefined,
+    googleCalendarSyncedAt: row.google_calendar_synced_at || undefined,
   };
 }
 
@@ -107,6 +113,7 @@ export function MaintenanceBoard() {
   const [userId, setUserId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [syncingCalendarId, setSyncingCalendarId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!supabase) {
@@ -327,6 +334,36 @@ export function MaintenanceBoard() {
     setNotice(`Opened Google Calendar event draft for "${task.title}". Review it, then save it in Google Calendar.`);
   };
 
+  const syncGoogleCalendar = async (task: MaintenanceTask) => {
+    setSyncingCalendarId(task.id);
+    setNotice(`Syncing "${task.title}" to Google Calendar...`);
+    const response = await fetch("/api/google/calendar/sync-maintenance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task }),
+    });
+    const payload = await response.json().catch(() => ({ message: "Google Calendar sync failed." })) as {
+      message?: string;
+      eventId?: string;
+      htmlLink?: string | null;
+      syncedAt?: string;
+    };
+    setSyncingCalendarId(null);
+
+    if (!response.ok) {
+      setNotice(payload.message || "Google Calendar sync failed.");
+      return;
+    }
+
+    setTasks((current) => current.map((item) => item.id === task.id ? {
+      ...item,
+      googleCalendarEventId: payload.eventId || item.googleCalendarEventId,
+      googleCalendarHtmlLink: payload.htmlLink || item.googleCalendarHtmlLink,
+      googleCalendarSyncedAt: payload.syncedAt || new Date().toISOString(),
+    } : item));
+    setNotice(`Synced "${task.title}" to Google Calendar.`);
+  };
+
   return (
     <section className="space-y-4">
       <div className="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
@@ -396,10 +433,17 @@ export function MaintenanceBoard() {
                 <Badge tone={priorityTone[task.priority]}>{task.priority}</Badge>
               </div>
               <div className="mt-4 grid gap-2">
+                <button disabled={syncingCalendarId === task.id} onClick={() => syncGoogleCalendar(task)} type="button" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-slate-950 px-3 py-2 text-center text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950">
+                  <CalendarPlus className="h-4 w-4 shrink-0" />
+                  <span>{syncingCalendarId === task.id ? "Syncing..." : task.googleCalendarEventId ? "Update synced event" : "Sync to Google"}</span>
+                </button>
                 <button onClick={() => openGoogleCalendar(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <CalendarPlus className="h-4 w-4" />
                   Add to Google Calendar
                 </button>
+                {task.googleCalendarSyncedAt && (
+                  <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">Last synced {formatTimestamp(task.googleCalendarSyncedAt)}</p>
+                )}
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <button onClick={() => sendTestReminder(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">

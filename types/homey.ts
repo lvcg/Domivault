@@ -42,6 +42,9 @@ export type MaintenanceTask = {
   assignedVendorId?: string;
   priority: MaintenancePriority;
   status: MaintenanceStatus;
+  googleCalendarEventId?: string;
+  googleCalendarSyncedAt?: string;
+  googleCalendarHtmlLink?: string;
 };
 
 export type Appliance = {

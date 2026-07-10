@@ -19,7 +19,19 @@ const termsSections = [
   },
   {
     title: "DomiVault Plus And Paid Features",
-    body: "Some features may require a paid plan, such as receipt storage, warranty tracking, maintenance history, vehicle records, calendar sync, expiration alerts, and exports. Paid access, billing, cancellations, refunds, and subscription status are managed through RevenueCat and the plan terms shown during checkout.",
+    body: "Some features may require a paid plan, such as receipt storage, warranty tracking, maintenance history, vehicle records, calendar sync, expiration alerts, OCR extraction, and exports. Paid access and subscription status are managed through the billing provider shown at checkout.",
+  },
+  {
+    title: "Free Trial And Renewal Billing",
+    body: "When a 7-day free trial is offered, you get full access to DomiVault Plus free for 7 days. If you do not cancel before the trial ends, you will be charged for the selected plan. On the current paywall, the annual plan is shown as about $6.67 per month and renews as a $79.99 annual charge unless cancelled before the trial ends. The exact price, billing period, taxes, and renewal details shown at checkout control if they differ from these terms.",
+  },
+  {
+    title: "Cancellation Policy",
+    body: "Cancel anytime means you can turn off renewal before the 7-day free trial ends and avoid the renewal charge. You may also cancel after a paid subscription begins to stop future renewals. Cancelling does not automatically delete your account or records, but paid features may become unavailable after the current paid period ends.",
+  },
+  {
+    title: "Refund Policy",
+    body: "Refund requests are reviewed based on the payment provider's rules, applicable law, and the facts of the request. We do not guarantee refunds for unused time, accidental renewals, missed cancellation windows, or partial subscription periods unless required by law or approved by the payment provider. If you believe you were charged in error, contact support promptly with your account email, charge date, and plan details.",
   },
   {
     title: "Exports And Reports",

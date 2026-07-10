@@ -2,19 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Camera, FileImage, Loader2, RotateCcw, ScanLine, StopCircle } from "lucide-react";
-import { createWorker } from "tesseract.js";
-import { preprocessImageForOcr } from "@/lib/ocr/browser-image-preprocess";
+import { extractBrowserOcr } from "@/lib/ocr/browser-tesseract";
 import { extractOcrFields, sanitizeOcrText, type OcrExtractedFields } from "@/lib/ocr/text-cleanup";
 
 type ScannerStatus = "isIdle" | "isCapturing" | "isProcessing" | "isSuccess" | "isError";
-
-type LegacyWorkerHooks = {
-  loadLanguage?: (language: string) => Promise<unknown>;
-  initialize?: (language: string) => Promise<unknown>;
-  setParameters?: (parameters: Record<string, string>) => Promise<unknown>;
-  recognize: (image: File | Blob | HTMLCanvasElement) => Promise<{ data: { text: string } }>;
-  terminate?: () => Promise<unknown>;
-};
 
 const statusLabel: Record<ScannerStatus, string> = {
   isIdle: "Ready to scan",
@@ -71,45 +62,15 @@ export function ClientDocumentScanner() {
     setProgress(0);
     setError("");
 
-    let worker: LegacyWorkerHooks | null = null;
-
     try {
-      worker = await createWorker("eng", undefined, {
-        logger: (message) => {
-          if (typeof message.progress === "number") {
-            setProgress(Math.round(message.progress * 100));
-          }
-        },
-      }) as unknown as LegacyWorkerHooks;
-
-      if (typeof worker.loadLanguage === "function") {
-        await worker.loadLanguage("eng");
-      }
-
-      if (typeof worker.initialize === "function") {
-        await worker.initialize("eng");
-      }
-
-      if (typeof worker.setParameters === "function") {
-        await worker.setParameters({
-          preserve_interword_spaces: "1",
-          tessedit_pageseg_mode: "11",
-          tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$.,:/#@&%()+- ",
-        });
-      }
-
-      const preprocessed = await preprocessImageForOcr(image);
-      const result = await worker.recognize(preprocessed.image);
-      const cleanText = sanitizeOcrText(result.data.text);
-      setText(cleanText);
-      setExtracted(extractOcrFields(cleanText));
+      const result = await extractBrowserOcr(image, ({ progress }) => setProgress(progress));
+      setText(result.text);
+      setExtracted(result.extracted);
       setProgress(100);
       setStatus("isSuccess");
     } catch {
       setError("We could not read text from this document. Try a sharper image with better lighting.");
       setStatus("isError");
-    } finally {
-      await worker?.terminate?.();
     }
   };
 
@@ -182,7 +143,7 @@ export function ClientDocumentScanner() {
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">Document scanner</p>
           <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">Scan receipts, warranties, and service records</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-            Upload an image or capture one with your camera. OCR runs in your browser with Tesseract.js.
+            Upload an image/PDF or capture one with your camera. OCR runs in your browser with Tesseract.js.
           </p>
         </div>
         <div aria-live="polite" className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 dark:bg-white/10 dark:text-slate-200">
@@ -196,7 +157,7 @@ export function ClientDocumentScanner() {
           Upload image
           <input
             aria-label="Upload document image"
-            accept="image/png,image/jpeg"
+            accept="image/png,image/jpeg,application/pdf"
             className="sr-only"
             disabled={isBusy}
             onChange={handleFileChange}

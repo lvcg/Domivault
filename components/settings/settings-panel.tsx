@@ -36,6 +36,13 @@ type ProfileRow = {
   updated_at?: string | null;
 };
 
+type CalendarConnectionState = {
+  connected: boolean;
+  googleEmail?: string | null;
+  connectedAt?: string | null;
+  message?: string | null;
+};
+
 const defaultSettings: SettingsState = {
   username: "",
   homeName: "",
@@ -70,6 +77,8 @@ export function SettingsPanel() {
   const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [calendarConnection, setCalendarConnection] = useState<CalendarConnectionState>({ connected: false });
+  const [isCalendarLoading, setIsCalendarLoading] = useState(false);
 
   const updateSetting = <Key extends keyof SettingsState>(key: Key, value: SettingsState[Key]) => {
     setSettings((current) => ({ ...current, [key]: value }));
@@ -147,6 +156,58 @@ export function SettingsPanel() {
 
     loadProfile();
   }, [activePlanTier, supabase]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const calendarStatus = params.get("calendar");
+    const calendarMessage = params.get("message");
+
+    if (calendarStatus === "connected") {
+      setMessage("Google Calendar connected. Maintenance reminders can now sync from the Maintenance page.");
+    }
+
+    if (calendarStatus === "error" || calendarStatus === "config-error") {
+      setMessage(calendarMessage || "Google Calendar could not be connected. Check the Google OAuth configuration.");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!userId || !isPlusUser) {
+      setCalendarConnection({ connected: false });
+      return;
+    }
+
+    refreshCalendarConnection();
+  }, [isPlusUser, userId]);
+
+  const refreshCalendarConnection = async () => {
+    setIsCalendarLoading(true);
+    const response = await fetch("/api/google/calendar/status");
+    const payload = await response.json().catch(() => ({ connected: false, message: "Could not load Google Calendar status." })) as CalendarConnectionState;
+    setIsCalendarLoading(false);
+
+    if (!response.ok) {
+      setCalendarConnection({ connected: false, message: payload.message || "Could not load Google Calendar status." });
+      return;
+    }
+
+    setCalendarConnection(payload);
+  };
+
+  const disconnectGoogleCalendar = async () => {
+    setIsCalendarLoading(true);
+    const response = await fetch("/api/google/calendar/disconnect", { method: "POST" });
+    const payload = await response.json().catch(() => ({ message: "Could not disconnect Google Calendar." })) as { message?: string };
+    setIsCalendarLoading(false);
+
+    if (!response.ok) {
+      setMessage(payload.message || "Could not disconnect Google Calendar.");
+      return;
+    }
+
+    setCalendarConnection({ connected: false });
+    setMessage("Google Calendar disconnected.");
+  };
 
   const saveSettings = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -295,6 +356,45 @@ export function SettingsPanel() {
               <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{pushNotifications.message}</p>
             </div>
             <Toggle icon={CalendarDays} label="Calendar sync (Plus)" checked={isPlusUser && settings.calendarSync} disabled={!isPlusUser} onChange={(checked) => updateSetting("calendarSync", checked)} />
+            <div className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/5">
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  <CalendarDays className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+                  Google Calendar
+                </span>
+                {!isPlusUser ? (
+                  <a
+                    href="/plus?feature=google-calendar"
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl bg-slate-950 px-4 py-2 text-center text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950"
+                  >
+                    Upgrade to connect
+                  </a>
+                ) : calendarConnection.connected ? (
+                  <button
+                    onClick={disconnectGoogleCalendar}
+                    disabled={isCalendarLoading}
+                    type="button"
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10"
+                  >
+                    {isCalendarLoading ? "Disconnecting..." : "Disconnect"}
+                  </button>
+                ) : (
+                  <a
+                    href="/api/google/calendar/connect"
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-center text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                  >
+                    Connect Google
+                  </a>
+                )}
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                {!isPlusUser
+                  ? "Google Calendar sync is included with DomiVault Plus."
+                  : calendarConnection.connected
+                    ? `Connected${calendarConnection.googleEmail ? ` to ${calendarConnection.googleEmail}` : ""}. Maintenance reminders can sync automatically from each task card.`
+                    : calendarConnection.message || "Connect your Google account to create and update reminder events from DomiVault."}
+              </p>
+            </div>
             <Toggle icon={Mail} label="Receipt scan suggestions (Plus)" checked={isPlusUser && settings.receiptScan} disabled={!isPlusUser} onChange={(checked) => updateSetting("receiptScan", checked)} />
             <Toggle icon={Moon} label="Dark mode" checked={settings.darkMode} onChange={(checked) => {
               const nextSettings = { ...settings, darkMode: checked };
