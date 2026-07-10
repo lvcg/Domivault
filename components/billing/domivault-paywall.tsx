@@ -126,9 +126,9 @@ export function DomiVaultPaywall() {
     isPurchasing,
     managementURL,
     openManagementPortal,
+    openPaywall,
     packages,
     refresh,
-    upgrade,
   } = useRevenueCatPremium();
   const membershipPlans = buildMembershipPlans(packages);
 
@@ -232,8 +232,8 @@ export function DomiVaultPaywall() {
                     )}
                   </div>
                   <button
-                    disabled={isPurchasing || !rcPackage}
-                    onClick={() => upgrade(rcPackage)}
+                    disabled={isPurchasing}
+                    onClick={openPaywall}
                     type="button"
                     className={cn(
                       "mt-auto inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60",
@@ -241,7 +241,7 @@ export function DomiVaultPaywall() {
                     )}
                   >
                     {isPurchasing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {isPurchasing ? "Opening checkout..." : rcPackage ? plan.cta : "Plan unavailable"}
+                    {isPurchasing ? "Opening checkout..." : plan.cta}
                   </button>
                   <p className="mt-2 text-center text-xs leading-5 text-slate-500 dark:text-slate-400">{plan.terms}</p>
                   <p className="mt-1 text-center text-xs font-semibold text-slate-700 dark:text-slate-200">{plan.reassurance}</p>
@@ -258,7 +258,14 @@ export function DomiVaultPaywall() {
           </p>
         )}
 
-        <div ref={checkoutTargetRef} className="mt-4" />
+        <div
+          id="show-paywall-here"
+          ref={checkoutTargetRef}
+          className={cn(
+            "mt-4 overflow-hidden rounded-3xl transition-all duration-200",
+            isPurchasing && "min-h-[560px] border border-slate-200/70 bg-white shadow-sm dark:border-white/10 dark:bg-slate-950",
+          )}
+        />
       </div>
     </section>
   );

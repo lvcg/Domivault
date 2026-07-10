@@ -126,11 +126,12 @@ export function useRevenueCatPremium() {
 
   const openPaywall = useCallback(async () => {
     setState((current) => ({ ...current, error: null, isPurchasing: true }));
+    checkoutTargetRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
     const result = await presentDomiVaultPaywall({
       appUserId: state.appUserId,
       email: state.email,
-      htmlTarget: checkoutTargetRef.current,
+      htmlTarget: checkoutTargetRef.current || document.getElementById("show-paywall-here"),
     });
 
     if (!result.ok) {
