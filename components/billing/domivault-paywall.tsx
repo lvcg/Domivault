@@ -59,6 +59,7 @@ function findPackage(packages: Package[], plan: MembershipPlan["id"]) {
       return item.identifier === domiVaultPlusPackageIds.monthly
         || item.webBillingProduct.identifier === domiVaultPlusPackageIds.monthly
         || item.identifier === "$rc_monthly"
+        || item.packageType === "$rc_monthly"
         || haystack.includes("month");
     }
 
@@ -66,12 +67,15 @@ function findPackage(packages: Package[], plan: MembershipPlan["id"]) {
       return item.identifier === domiVaultPlusPackageIds.yearly
         || item.webBillingProduct.identifier === domiVaultPlusPackageIds.yearly
         || item.identifier === "$rc_annual"
+        || item.packageType === "$rc_annual"
         || haystack.includes("annual")
         || haystack.includes("year");
     }
 
     return item.identifier === domiVaultPlusPackageIds.lifetime
       || item.webBillingProduct.identifier === domiVaultPlusPackageIds.lifetime
+      || item.identifier === "$rc_lifetime"
+      || item.packageType === "$rc_lifetime"
       || haystack.includes("lifetime")
       || haystack.includes("life")
       || haystack.includes("one-time")
@@ -129,6 +133,7 @@ export function DomiVaultPaywall() {
     openPaywall,
     packages,
     refresh,
+    upgrade,
   } = useRevenueCatPremium();
   const membershipPlans = buildMembershipPlans(packages);
 
@@ -232,16 +237,16 @@ export function DomiVaultPaywall() {
                     )}
                   </div>
                   <button
-                    disabled={isPurchasing}
-                    onClick={openPaywall}
+                    disabled={isPurchasing || !rcPackage}
+                    onClick={() => rcPackage ? upgrade(rcPackage) : openPaywall()}
                     type="button"
                     className={cn(
-                      "mt-auto inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60",
+                      "mt-auto inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-3 py-2 text-center text-sm font-semibold leading-tight shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60",
                       "bg-blue-600 text-white hover:bg-blue-500",
                     )}
                   >
                     {isPurchasing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {isPurchasing ? "Opening checkout..." : plan.cta}
+                    <span className="whitespace-normal">{isPurchasing ? "Opening checkout..." : rcPackage ? plan.cta : "Plan unavailable"}</span>
                   </button>
                   <p className="mt-2 text-center text-xs leading-5 text-slate-500 dark:text-slate-400">{plan.terms}</p>
                   <p className="mt-1 text-center text-xs font-semibold text-slate-700 dark:text-slate-200">{plan.reassurance}</p>

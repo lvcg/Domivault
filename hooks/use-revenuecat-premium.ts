@@ -90,11 +90,12 @@ export function useRevenueCatPremium() {
 
   const upgrade = useCallback(async (packageToPurchase?: Package | null) => {
     setState((current) => ({ ...current, error: null, isPurchasing: true }));
+    checkoutTargetRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
     const result = await purchaseDomiVaultPlus({
       appUserId: state.appUserId,
       email: state.email,
-      htmlTarget: checkoutTargetRef.current,
+      htmlTarget: checkoutTargetRef.current || document.getElementById("show-paywall-here"),
       packageToPurchase,
     });
 
