@@ -27,5 +27,13 @@ create index if not exists google_calendar_tokens_updated_idx on public.google_c
 
 alter table public.google_calendar_tokens enable row level security;
 
--- No user-facing RLS policy is intentionally created for google_calendar_tokens.
+drop policy if exists "Service role manages Google Calendar tokens" on public.google_calendar_tokens;
+
+create policy "Service role manages Google Calendar tokens"
+on public.google_calendar_tokens for all
+to service_role
+using (true)
+with check (true);
+
+-- No authenticated user policy is created for google_calendar_tokens.
 -- Tokens are read/written only by server API routes with SUPABASE_SERVICE_ROLE_KEY.

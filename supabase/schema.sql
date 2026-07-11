@@ -326,6 +326,7 @@ create table if not exists public.vehicle_service_events (
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   new.updated_at = now();
@@ -498,6 +499,7 @@ drop policy if exists "Users manage own vehicles" on public.vehicles;
 drop policy if exists "Plus users manage own vehicles" on public.vehicles;
 drop policy if exists "Users manage own vehicle service events" on public.vehicle_service_events;
 drop policy if exists "Plus users manage own vehicle service events" on public.vehicle_service_events;
+drop policy if exists "Service role manages Google Calendar tokens" on public.google_calendar_tokens;
 
 create policy "Users manage own profile"
 on public.profiles for all
@@ -522,6 +524,12 @@ on public.bills for all
 to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
+
+create policy "Service role manages Google Calendar tokens"
+on public.google_calendar_tokens for all
+to service_role
+using (true)
+with check (true);
 
 create policy "Users manage own vendors"
 on public.vendors for all
