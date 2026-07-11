@@ -30,6 +30,7 @@ const plusEntitlementEvent = "domivault-plus-entitlement-updated";
 export function useRevenueCatPremium() {
   const supabase = useMemo(() => createClient(), []);
   const checkoutTargetRef = useRef<HTMLDivElement | null>(null);
+  const checkoutInFlightRef = useRef(false);
   const [state, setState] = useState<RevenueCatPremiumState>({
     appUserId: null,
     email: null,
@@ -89,15 +90,23 @@ export function useRevenueCatPremium() {
   }, [loadRevenueCatState]);
 
   const upgrade = useCallback(async (packageToPurchase?: Package | null) => {
+    if (checkoutInFlightRef.current) {
+      return {
+        ok: false as const,
+        cancelled: true as const,
+        message: "Checkout is already opening.",
+      };
+    }
+
+    checkoutInFlightRef.current = true;
     setState((current) => ({ ...current, error: null, isPurchasing: true }));
-    checkoutTargetRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
     const result = await purchaseDomiVaultPlus({
       appUserId: state.appUserId,
       email: state.email,
-      htmlTarget: checkoutTargetRef.current || document.getElementById("show-paywall-here"),
       packageToPurchase,
     });
+    checkoutInFlightRef.current = false;
 
     if (!result.ok) {
       setState((current) => ({
@@ -126,14 +135,22 @@ export function useRevenueCatPremium() {
   }, [state.appUserId, state.email]);
 
   const openPaywall = useCallback(async () => {
+    if (checkoutInFlightRef.current) {
+      return {
+        ok: false as const,
+        cancelled: true as const,
+        message: "Checkout is already opening.",
+      };
+    }
+
+    checkoutInFlightRef.current = true;
     setState((current) => ({ ...current, error: null, isPurchasing: true }));
-    checkoutTargetRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
     const result = await presentDomiVaultPaywall({
       appUserId: state.appUserId,
       email: state.email,
-      htmlTarget: checkoutTargetRef.current || document.getElementById("show-paywall-here"),
     });
+    checkoutInFlightRef.current = false;
 
     if (!result.ok) {
       setState((current) => ({

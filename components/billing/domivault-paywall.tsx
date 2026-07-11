@@ -2,6 +2,7 @@
 
 import type { Package } from "@revenuecat/purchases-js";
 import { Check, Crown, Loader2, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
+import { useCallback, useState } from "react";
 import { useRevenueCatPremium } from "@/hooks/use-revenuecat-premium";
 import { domiVaultPlusPackageIds } from "@/lib/revenuecat-purchases";
 import { cn } from "@/lib/utils";
@@ -97,25 +98,25 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
     },
     {
       caption: "Annual access for homeowners who want the full records vault all year.",
-      cta: "Start 7-Day Free Trial",
+      cta: "Choose Yearly",
       id: "yearly",
       package: findPackage(packages, "yearly"),
       price: "$69.99/yr",
       reassurance: "Cancel anytime.",
       savings: "Save $49.89 vs monthly",
-      terms: "7-day free trial, then $69.99/year. Cancel anytime.",
+      terms: "$69.99 billed yearly. Cancel anytime.",
       title: "Yearly",
     },
     {
       badge: "Highly Recommended",
       caption: "One-time access for long-term home, vehicle, warranty, and document records.",
-      cta: "Start 7-Day Free Trial",
+      cta: "Get Lifetime Access",
       highlight: true,
       id: "lifetime",
       package: findPackage(packages, "lifetime"),
       price: "$99.99",
       reassurance: "Cancel anytime.",
-      terms: "7-day free trial, then $99.99. Cancel anytime.",
+      terms: "$99.99 one-time payment.",
       title: "Lifetime",
     },
   ];
@@ -123,19 +124,30 @@ function buildMembershipPlans(packages: Package[]): MembershipPlan[] {
 
 export function DomiVaultPaywall() {
   const {
-    checkoutTargetRef,
     error,
     isLoading,
     isPremium,
     isPurchasing,
     managementURL,
     openManagementPortal,
-    openPaywall,
     packages,
     refresh,
     upgrade,
   } = useRevenueCatPremium();
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const membershipPlans = buildMembershipPlans(packages);
+  const checkoutBusy = isPurchasing || isRedirecting;
+  const startCheckout = useCallback((rcPackage: Package | null) => {
+    if (checkoutBusy || !rcPackage) return;
+
+    if (rcPackage.webCheckoutURL) {
+      setIsRedirecting(true);
+      window.location.assign(rcPackage.webCheckoutURL);
+      return;
+    }
+
+    void upgrade(rcPackage);
+  }, [checkoutBusy, upgrade]);
 
   return (
     <section className="mx-auto grid w-full max-w-5xl gap-5">
@@ -237,16 +249,16 @@ export function DomiVaultPaywall() {
                     )}
                   </div>
                   <button
-                    disabled={isPurchasing || !rcPackage}
-                    onClick={() => rcPackage ? upgrade(rcPackage) : openPaywall()}
+                    disabled={checkoutBusy || !rcPackage}
+                    onClick={() => startCheckout(rcPackage)}
                     type="button"
                     className={cn(
                       "mt-auto inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-3 py-2 text-center text-sm font-semibold leading-tight shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60",
                       "bg-blue-600 text-white hover:bg-blue-500",
                     )}
                   >
-                    {isPurchasing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    <span className="whitespace-normal">{isPurchasing ? "Opening checkout..." : rcPackage ? plan.cta : "Plan unavailable"}</span>
+                    {checkoutBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    <span className="whitespace-normal">{checkoutBusy ? "Opening checkout..." : rcPackage ? plan.cta : "Plan unavailable"}</span>
                   </button>
                   <p className="mt-2 text-center text-xs leading-5 text-slate-500 dark:text-slate-400">{plan.terms}</p>
                   <p className="mt-1 text-center text-xs font-semibold text-slate-700 dark:text-slate-200">{plan.reassurance}</p>
@@ -262,15 +274,6 @@ export function DomiVaultPaywall() {
             {error}
           </p>
         )}
-
-        <div
-          id="show-paywall-here"
-          ref={checkoutTargetRef}
-          className={cn(
-            "mt-4 overflow-hidden rounded-3xl transition-all duration-200",
-            isPurchasing && "min-h-[560px] border border-slate-200/70 bg-white shadow-sm dark:border-white/10 dark:bg-slate-950",
-          )}
-        />
       </div>
     </section>
   );
