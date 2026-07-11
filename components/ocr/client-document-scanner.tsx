@@ -143,7 +143,7 @@ export function ClientDocumentScanner() {
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">Document scanner</p>
           <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">Scan receipts, warranties, and service records</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-            Upload an image/PDF or capture one with your camera. OCR runs in your browser with Tesseract.js.
+            Upload a receipt, warranty, or service document and DomiVault will pull out the important details for review.
           </p>
         </div>
         <div aria-live="polite" className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 dark:bg-white/10 dark:text-slate-200">
