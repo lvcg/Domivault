@@ -40,14 +40,16 @@ export async function DELETE() {
     if (storagePaths.length > 0) {
       await admin.storage.from("receipts").remove(storagePaths);
     }
-  } catch {
+  } catch (error) {
+    console.error("Account deletion storage cleanup failed:", error);
     // Account deletion should still continue if storage cleanup is partially unavailable.
   }
 
   const { error } = await admin.auth.admin.deleteUser(user.id);
 
   if (error) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    console.error("Account deletion failed:", error);
+    return NextResponse.json({ message: "Could not delete your account. Try again shortly." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

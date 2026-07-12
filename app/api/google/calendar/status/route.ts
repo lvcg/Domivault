@@ -28,9 +28,10 @@ export async function GET() {
     .maybeSingle();
 
   if (error) {
+    console.error("Google Calendar status lookup failed:", error);
     return NextResponse.json({
       connected: false,
-      message: `${error.message}. Run the latest Supabase schema if google_calendar_tokens is missing.`,
+      message: "Could not load Google Calendar connection status.",
     }, { status: 500 });
   }
 

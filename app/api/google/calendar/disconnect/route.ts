@@ -27,7 +27,8 @@ export async function POST() {
     .eq("user_id", user.id);
 
   if (error) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    console.error("Google Calendar disconnect failed:", error);
+    return NextResponse.json({ message: "Could not disconnect Google Calendar. Try again shortly." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

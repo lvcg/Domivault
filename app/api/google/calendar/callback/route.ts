@@ -64,11 +64,13 @@ export async function GET(request: Request) {
       }, { onConflict: "user_id" });
 
     if (error) {
-      return settingsRedirect("error", `${error.message}. Run the latest Supabase schema if google_calendar_tokens is missing.`);
+      console.error("Google Calendar token save failed:", error);
+      return settingsRedirect("error", "Google Calendar connection could not be saved. Check setup and try again.");
     }
 
     return settingsRedirect("connected");
   } catch (error) {
-    return settingsRedirect("error", error instanceof Error ? error.message : "Google Calendar connection failed.");
+    console.error("Google Calendar callback failed:", error);
+    return settingsRedirect("error", "Google Calendar connection failed. Try again from Settings.");
   }
 }

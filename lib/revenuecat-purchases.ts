@@ -14,12 +14,11 @@ import {
 import { defaultRevenueCatEntitlementId, domiVaultPlusPackageIds } from "@/lib/billing/revenuecat-config";
 
 const anonymousAppUserIdStorageKey = "domivault-revenuecat-anonymous-app-user-id";
-const fallbackTestApiKey = "test_xOKlmUuGRPMTjxxslhKaIbgdwEa";
 
 export { domiVaultPlusPackageIds };
 
 export const revenueCatConfig = {
-  apiKey: process.env.NEXT_PUBLIC_REVENUECAT_API_KEY || (process.env.NODE_ENV === "development" ? fallbackTestApiKey : ""),
+  apiKey: process.env.NEXT_PUBLIC_REVENUECAT_API_KEY || "",
   entitlementId: process.env.NEXT_PUBLIC_REVENUECAT_ENTITLEMENT_ID || defaultRevenueCatEntitlementId,
 };
 

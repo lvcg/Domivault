@@ -5,6 +5,7 @@ import { Camera, FilePenLine, FileScan, Loader2, Trash2, Upload, X } from "lucid
 import { createClient } from "@/lib/supabase/client";
 import { usePlanTier } from "@/hooks/use-plan-tier";
 import type { VaultDocument, VaultDocumentType } from "@/types/homey";
+import { getVaultDocumentMimeType, getVaultDocumentValidationError } from "@/lib/documents/file-limits";
 import { formatTimestamp } from "@/lib/utils";
 import { extractBrowserOcr } from "@/lib/ocr/browser-tesseract";
 import { isPdfFile } from "@/lib/ocr/browser-pdf-render";
@@ -132,7 +133,8 @@ export function DocumentUploadCard({
       if (!isMounted) return;
 
       if (error) {
-        setNotice(`Could not load documents: ${error.message}`);
+        console.error("Document load failed:", error);
+        setNotice("Could not load documents. Try refreshing the page.");
         return;
       }
 
@@ -199,6 +201,12 @@ export function DocumentUploadCard({
       return;
     }
 
+    const validationError = getVaultDocumentValidationError(file);
+    if (validationError) {
+      setNotice(validationError);
+      return;
+    }
+
     setIsBusy(true);
     setNotice(source === "scan" ? "Saving scanned document..." : "Uploading document...");
 
@@ -212,15 +220,17 @@ export function DocumentUploadCard({
     }
 
     const storagePath = `${userId}/${type}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
+    const contentType = getVaultDocumentMimeType(file);
     const upload = await supabase.storage.from(bucket).upload(storagePath, file, {
       cacheControl: "3600",
-      contentType: file.type || "application/octet-stream",
+      contentType,
       upsert: false,
     });
 
     if (upload.error) {
+      console.error("Document upload failed:", upload.error);
       setIsBusy(false);
-      setNotice(`Upload failed: ${upload.error.message}`);
+      setNotice("Upload failed. Check the file type and try again.");
       return;
     }
 
@@ -234,10 +244,11 @@ export function DocumentUploadCard({
       ocr = await runOcr(file);
       onOcrExtracted?.(ocr);
     } catch (error) {
+      console.error("Document OCR failed:", error);
       ocr = {
         text: "",
         status: "failed",
-        message: error instanceof Error ? error.message : "OCR failed.",
+        message: "OCR failed.",
       };
     }
 
@@ -248,7 +259,7 @@ export function DocumentUploadCard({
       originalName: file.name,
       source,
       size: file.size,
-      mimeType: file.type || "application/octet-stream",
+      mimeType: contentType,
       extracted: ocr.extracted || {},
     };
 
@@ -270,8 +281,9 @@ export function DocumentUploadCard({
 
     if (error) {
       await supabase.storage.from(bucket).remove([storagePath]);
+      console.error("Document metadata save failed:", error);
       setIsBusy(false);
-      setNotice(`Document metadata was not saved: ${error.message}`);
+      setNotice("Document metadata was not saved. Try again shortly.");
       return;
     }
 
@@ -313,7 +325,8 @@ export function DocumentUploadCard({
       }, 0);
       setNotice("Camera ready. Center the document, then capture.");
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Camera permission was not granted.");
+      console.error("Camera scan start failed:", error);
+      setNotice("Camera permission was not granted or the camera is unavailable.");
     }
   };
 
@@ -349,7 +362,8 @@ export function DocumentUploadCard({
 
     const { error } = await supabase.from("vault_documents").update({ name: nextName.trim() }).eq("id", document.id);
     if (error) {
-      setNotice(`Could not rename document: ${error.message}`);
+      console.error("Document rename failed:", error);
+      setNotice("Could not rename document. Try again shortly.");
       return;
     }
 
@@ -364,8 +378,9 @@ export function DocumentUploadCard({
     setIsBusy(true);
     const { error: removeError } = await supabase.storage.from(document.storageBucket || bucket).remove([storagePath]);
     if (removeError) {
+      console.error("Document storage delete failed:", removeError);
       setIsBusy(false);
-      setNotice(`Could not delete storage file: ${removeError.message}`);
+      setNotice("Could not delete the storage file. Try again shortly.");
       return;
     }
 
@@ -373,7 +388,8 @@ export function DocumentUploadCard({
     setIsBusy(false);
 
     if (error) {
-      setNotice(`File was removed, but metadata delete failed: ${error.message}`);
+      console.error("Document metadata delete failed:", error);
+      setNotice("File was removed, but the document record could not be deleted.");
       return;
     }
 

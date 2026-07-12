@@ -126,7 +126,8 @@ export function SettingsPanel() {
         .maybeSingle();
 
       if (error) {
-        setMessage(`Could not load profile: ${error.message}`);
+        console.error("Profile load failed:", error);
+        setMessage("Could not load your profile. Try refreshing the page.");
         return;
       }
 
@@ -261,7 +262,8 @@ export function SettingsPanel() {
     setIsSaving(false);
 
     if (error) {
-      setMessage(`Could not save profile: ${error.message}. Run the latest database schema if the new profile settings columns are missing.`);
+      console.error("Profile save failed:", error);
+      setMessage("Could not save your profile. Check your database setup and try again.");
       return;
     }
 

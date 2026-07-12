@@ -58,7 +58,8 @@ export async function POST(request: Request) {
         message: "Push notification columns are missing in Supabase. Run supabase/push-notifications.sql in the Supabase SQL Editor, then retry.",
       }, { status: 500 });
     }
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    console.error("Push subscription lookup failed:", error);
+    return NextResponse.json({ message: "Could not load push notification settings." }, { status: 500 });
   }
 
   const profile = data as PushProfileRow | null;
@@ -78,6 +79,7 @@ export async function POST(request: Request) {
     await webPush.sendNotification(profile.push_subscription, payload);
     return NextResponse.json({ ok: true });
   } catch (error) {
+    console.error("Push notification send failed:", error);
     const statusCode = typeof error === "object" && error && "statusCode" in error ? Number(error.statusCode) : 500;
 
     if (statusCode === 404 || statusCode === 410) {
@@ -92,7 +94,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      message: error instanceof Error ? error.message : "Push notification failed.",
+      message: "Push notification failed. Check notification settings and try again.",
     }, { status: statusCode || 500 });
   }
 }

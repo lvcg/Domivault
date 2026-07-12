@@ -66,7 +66,8 @@ export async function POST(request: Request) {
 
   if (error) {
     if (isMissingPushSchema(error)) return missingPushSchemaResponse();
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    console.error("Push subscription save failed:", error);
+    return NextResponse.json({ message: "Could not save push notification settings." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, savedAt });
@@ -98,7 +99,8 @@ export async function DELETE() {
 
   if (error) {
     if (isMissingPushSchema(error)) return missingPushSchemaResponse();
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    console.error("Push subscription disable failed:", error);
+    return NextResponse.json({ message: "Could not update push notification settings." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

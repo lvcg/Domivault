@@ -733,6 +733,23 @@ to authenticated
 with check (
   bucket_id = 'receipts'
   and (storage.foldername(name))[1] = auth.uid()::text
+  and lower(coalesce(metadata->>'mimetype', '')) in (
+    'application/json',
+    'application/pdf',
+    'application/xml',
+    'image/bmp',
+    'image/gif',
+    'image/jpeg',
+    'image/jpg',
+    'image/pjpeg',
+    'image/png',
+    'image/tiff',
+    'image/webp',
+    'text/csv',
+    'text/markdown',
+    'text/plain',
+    'text/xml'
+  )
   and exists (
     select 1
     from public.profiles

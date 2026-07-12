@@ -27,9 +27,10 @@ export async function GET() {
 
     return NextResponse.redirect(createGoogleCalendarAuthUrl(state));
   } catch (error) {
+    console.error("Google Calendar connect failed:", error);
     const url = new URL("/settings", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
     url.searchParams.set("calendar", "config-error");
-    url.searchParams.set("message", error instanceof Error ? error.message : "Google Calendar connection failed.");
+    url.searchParams.set("message", "Google Calendar connection is not configured yet.");
     return NextResponse.redirect(url);
   }
 }

@@ -28,9 +28,9 @@ const plusEvents = new Set([
 const freeEvents = new Set(["EXPIRATION"]);
 const premiumEntitlementId = process.env.NEXT_PUBLIC_REVENUECAT_ENTITLEMENT_ID || "premium_access";
 
-function eventIncludesPremiumEntitlement(event: RevenueCatEvent) {
+function eventHasPremiumEntitlement(event: RevenueCatEvent) {
   const entitlementIds = new Set([event.entitlement_id, ...(event.entitlement_ids || [])].filter(Boolean));
-  return entitlementIds.size === 0 || entitlementIds.has(premiumEntitlementId);
+  return entitlementIds.has(premiumEntitlementId);
 }
 
 function verifyAuthorization(request: Request, rawBody: string) {
@@ -44,7 +44,9 @@ function verifyAuthorization(request: Request, rawBody: string) {
     if (!authorization || !expectedValues.includes(authorization)) return false;
   }
 
-  if (signingSecret && signature) {
+  if (signingSecret) {
+    if (!signature) return false;
+
     const parts = Object.fromEntries(signature.split(",").map((part) => {
       const [key, ...value] = part.split("=");
       return [key, value.join("=")];
@@ -70,7 +72,7 @@ function verifyAuthorization(request: Request, rawBody: string) {
     return crypto.timingSafeEqual(computedBuffer, expectedBuffer);
   }
 
-  return Boolean(authToken || signingSecret);
+  return Boolean(authToken);
 }
 
 export async function POST(request: Request) {
@@ -102,14 +104,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "RevenueCat event missing app_user_id." }, { status: 400 });
   }
 
-  if (!eventIncludesPremiumEntitlement(event)) {
-    return NextResponse.json({ ok: true, ignored: `Non-${premiumEntitlementId} entitlement event.` });
-  }
-
   const nextPlanTier = plusEvents.has(eventType) ? "vault_plus" : freeEvents.has(eventType) ? "free" : null;
 
   if (!nextPlanTier) {
     return NextResponse.json({ ok: true, ignored: eventType });
+  }
+
+  if (nextPlanTier === "vault_plus" && !eventHasPremiumEntitlement(event)) {
+    return NextResponse.json({ ok: true, ignored: `Missing ${premiumEntitlementId} entitlement for upgrade event.` });
   }
 
   const admin = createSupabaseAdminClient(supabaseUrl, serviceRoleKey, {
@@ -134,7 +136,8 @@ export async function POST(request: Request) {
     .eq("id", appUserId);
 
   if (error) {
-    return NextResponse.json({ message: error.message }, { status: 500 });
+    console.error("RevenueCat webhook profile update failed:", error);
+    return NextResponse.json({ message: "Could not process billing update." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, plan_tier: nextPlanTier });

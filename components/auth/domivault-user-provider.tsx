@@ -13,14 +13,8 @@ type DomiVaultUserContextValue = {
   user: User | null;
 };
 
-const plusEntitlementStorageKey = "domivault-plus-entitlement-active";
 const plusEntitlementEvent = "domivault-plus-entitlement-updated";
 const DomiVaultUserContext = createContext<DomiVaultUserContextValue | null>(null);
-
-function hasClientPlusSignal() {
-  if (typeof window === "undefined") return false;
-  return window.localStorage.getItem(plusEntitlementStorageKey) === "true";
-}
 
 export function DomiVaultUserProvider({ children }: { children: React.ReactNode }) {
   const supabase = useMemo(() => createClient(), []);
@@ -30,7 +24,7 @@ export function DomiVaultUserProvider({ children }: { children: React.ReactNode 
 
   const refreshUserState = useCallback(async () => {
     if (!supabase) {
-      setPlanTier(hasClientPlusSignal() ? "vault_plus" : "free");
+      setPlanTier("free");
       setUser(null);
       setIsLoading(false);
       return;
@@ -42,7 +36,7 @@ export function DomiVaultUserProvider({ children }: { children: React.ReactNode 
     setUser(activeUser);
 
     if (!activeUser) {
-      setPlanTier(hasClientPlusSignal() ? "vault_plus" : "free");
+      setPlanTier("free");
       setIsLoading(false);
       return;
     }
@@ -61,17 +55,7 @@ export function DomiVaultUserProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     refreshUserState();
 
-    const handlePlanSignal = (event: Event) => {
-      if ("detail" in event && typeof event.detail === "object" && event.detail) {
-        const { isPremium } = event.detail as { isPremium?: boolean };
-
-        if (typeof isPremium === "boolean") {
-          setPlanTier(isPremium ? "vault_plus" : "free");
-          setIsLoading(false);
-          return;
-        }
-      }
-
+    const handlePlanSignal = () => {
       refreshUserState();
     };
     window.addEventListener(plusEntitlementEvent, handlePlanSignal);

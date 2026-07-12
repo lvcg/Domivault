@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { PSM, createWorker } from "tesseract.js";
 import { requireVaultPlus } from "@/lib/auth/server-plan";
+import { getOcrFileLimitError, isOcrImageFile, isOcrTextFile } from "@/lib/documents/file-limits";
 import { extractOcrFields, sanitizeOcrText } from "@/lib/ocr/text-cleanup";
 
 type OcrPayload = {
@@ -10,20 +11,8 @@ type OcrPayload = {
   message: string;
 };
 
-const textTypes = new Set([
-  "application/json",
-  "application/xml",
-  "text/csv",
-  "text/markdown",
-  "text/plain",
-  "text/xml",
-]);
-
 async function extractWithTesseract(file: File): Promise<OcrPayload> {
-  const imageTypes = new Set(["image/bmp", "image/gif", "image/jpeg", "image/png", "image/tiff", "image/webp"]);
-  const isImage = imageTypes.has(file.type) || file.name.match(/\.(bmp|gif|jpe?g|png|tiff?|webp)$/i);
-
-  if (!isImage) {
+  if (!isOcrImageFile(file)) {
     return {
       text: "",
       status: "unavailable",
@@ -70,7 +59,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ text: "", status: "failed", message: "No document file was provided." }, { status: 400 });
     }
 
-    if (textTypes.has(file.type) || file.name.match(/\.(csv|json|md|txt|xml)$/i)) {
+    const fileLimitError = getOcrFileLimitError(file);
+    if (fileLimitError) {
+      return NextResponse.json({ text: "", status: "failed", message: fileLimitError } satisfies OcrPayload, { status: 413 });
+    }
+
+    if (isOcrTextFile(file)) {
       const text = sanitizeOcrText(await file.text());
       return NextResponse.json({
         text,
@@ -83,10 +77,11 @@ export async function POST(request: Request) {
     const result = await extractWithTesseract(file);
     return NextResponse.json(result);
   } catch (error) {
+    console.error("OCR request failed:", error);
     return NextResponse.json({
       text: "",
       status: "failed",
-      message: error instanceof Error ? error.message : "OCR failed.",
+      message: "OCR failed. Try a smaller or clearer document.",
     } satisfies OcrPayload, { status: 500 });
   }
 }

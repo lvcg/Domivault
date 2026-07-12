@@ -19,19 +19,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const themeScript = `
-    try {
-      const settings = localStorage.getItem("homey-settings");
-      const darkMode = settings ? Boolean(JSON.parse(settings).darkMode) : false;
-      document.documentElement.classList.toggle("dark", darkMode);
-      document.documentElement.dataset.theme = darkMode ? "dark" : "light";
-    } catch {}
-  `;
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script src="/theme-init.js" />
       </head>
       <body>
         <ThemeProvider>

@@ -29,10 +29,11 @@ export async function requireVaultPlus() {
     .maybeSingle();
 
   if (error) {
+    console.error("DomiVault Plus profile check failed:", error);
     return {
       ok: false as const,
       status: 500,
-      message: error.message,
+      message: "Could not verify your DomiVault Plus status. Try again shortly.",
     };
   }
 

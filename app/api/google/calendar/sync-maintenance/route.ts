@@ -54,7 +54,8 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ message: `${error.message}. Run the latest Supabase schema if google_calendar_tokens is missing.` }, { status: 500 });
+    console.error("Google Calendar token lookup failed:", error);
+    return NextResponse.json({ message: "Could not load Google Calendar connection. Check setup and try again." }, { status: 500 });
   }
 
   if (!data) {
@@ -118,6 +119,7 @@ export async function POST(request: Request) {
       syncedAt,
     });
   } catch (error) {
-    return NextResponse.json({ message: error instanceof Error ? error.message : "Calendar sync failed." }, { status: 502 });
+    console.error("Google Calendar sync failed:", error);
+    return NextResponse.json({ message: "Calendar sync failed. Reconnect Google Calendar and try again." }, { status: 502 });
   }
 }
