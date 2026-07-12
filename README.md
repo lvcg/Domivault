@@ -28,30 +28,10 @@ It centralizes the operational side of home ownership: improvement expenses, uti
 
 ![Login and signup](public/screenshots/domivault-login.png)
 
-## Video Walkthrough
 
-A walkthrough video can be added at:
 
-```text
-public/demo/domivault-walkthrough.mp4
-```
-
-Suggested recording flow:
-
-1. Open `/login` and authenticate.
-2. Show `/dashboard` for command-center metrics.
-3. Add or edit records in `/expenses`, `/maintenance`, `/appliances`, `/vehicles`, and `/vendors`.
-4. Upload or scan a receipt/warranty document in `/scanner`.
-5. Export a report from `/reports`.
-6. Review profile, plan, theme, and reminder settings in `/settings`.
-
-Embed once recorded:
-
-```html
 <video src="public/demo/domivault-walkthrough.mp4" controls width="100%"></video>
-```
-
-## Key Architecture and Features
+## Core Features
 
 ### Secure Data Vaulting
 
