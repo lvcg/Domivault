@@ -516,14 +516,14 @@ with check ((select auth.uid()) = user_id);
 create policy "Users manage own expenses"
 on public.expenses for all
 to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
 
 create policy "Users manage own bills"
 on public.bills for all
 to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
 
 create policy "Service role manages Google Calendar tokens"
 on public.google_calendar_tokens for all
@@ -534,30 +534,30 @@ with check (true);
 create policy "Users manage own vendors"
 on public.vendors for all
 to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
 
 create policy "Users read own appliances"
 on public.appliances for select
 to authenticated
-using (auth.uid() = user_id);
+using ((select auth.uid()) = user_id);
 
 create policy "Users delete own appliances"
 on public.appliances for delete
 to authenticated
-using (auth.uid() = user_id);
+using ((select auth.uid()) = user_id);
 
 create policy "Users create basic appliance records"
 on public.appliances for insert
 to authenticated
 with check (
-  auth.uid() = user_id
+  (select auth.uid()) = user_id
   and (
     (warranty_expires is null and document_url is null)
     or exists (
       select 1
       from public.profiles
-      where profiles.id = auth.uid()
+      where profiles.id = (select auth.uid())
         and profiles.plan_tier = 'vault_plus'
     )
   )
@@ -566,15 +566,15 @@ with check (
 create policy "Users update basic appliance records"
 on public.appliances for update
 to authenticated
-using (auth.uid() = user_id)
+using ((select auth.uid()) = user_id)
 with check (
-  auth.uid() = user_id
+  (select auth.uid()) = user_id
   and (
     (warranty_expires is null and document_url is null)
     or exists (
       select 1
       from public.profiles
-      where profiles.id = auth.uid()
+      where profiles.id = (select auth.uid())
         and profiles.plan_tier = 'vault_plus'
     )
   )
@@ -583,27 +583,27 @@ with check (
 create policy "Users manage own maintenance tasks"
 on public.maintenance_tasks for all
 to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
 
 create policy "Plus users manage own service events"
 on public.service_events for all
 to authenticated
 using (
-  auth.uid() = user_id
+  (select auth.uid()) = user_id
   and exists (
     select 1
     from public.profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.plan_tier = 'vault_plus'
   )
 )
 with check (
-  auth.uid() = user_id
+  (select auth.uid()) = user_id
   and exists (
     select 1
     from public.profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.plan_tier = 'vault_plus'
   )
 );
@@ -612,20 +612,20 @@ create policy "Plus users manage own reminders"
 on public.reminders for all
 to authenticated
 using (
-  auth.uid() = user_id
+  (select auth.uid()) = user_id
   and exists (
     select 1
     from public.profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.plan_tier = 'vault_plus'
   )
 )
 with check (
-  auth.uid() = user_id
+  (select auth.uid()) = user_id
   and exists (
     select 1
     from public.profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.plan_tier = 'vault_plus'
   )
 );
@@ -639,17 +639,17 @@ drop policy if exists "Users delete own vault documents" on public.vault_documen
 create policy "Users read own vault documents"
 on public.vault_documents for select
 to authenticated
-using (auth.uid() = user_id);
+using ((select auth.uid()) = user_id);
 
 create policy "Plus users create own vault documents"
 on public.vault_documents for insert
 to authenticated
 with check (
-  auth.uid() = user_id
+  (select auth.uid()) = user_id
   and exists (
     select 1
     from public.profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.plan_tier = 'vault_plus'
   )
 );
@@ -657,13 +657,13 @@ with check (
 create policy "Plus users update own vault documents"
 on public.vault_documents for update
 to authenticated
-using (auth.uid() = user_id)
+using ((select auth.uid()) = user_id)
 with check (
-  auth.uid() = user_id
+  (select auth.uid()) = user_id
   and exists (
     select 1
     from public.profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.plan_tier = 'vault_plus'
   )
 );
@@ -671,26 +671,26 @@ with check (
 create policy "Users delete own vault documents"
 on public.vault_documents for delete
 to authenticated
-using (auth.uid() = user_id);
+using ((select auth.uid()) = user_id);
 
 create policy "Plus users manage own vehicles"
 on public.vehicles for all
 to authenticated
 using (
-  auth.uid() = user_id
+  (select auth.uid()) = user_id
   and exists (
     select 1
     from public.profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.plan_tier = 'vault_plus'
   )
 )
 with check (
-  auth.uid() = user_id
+  (select auth.uid()) = user_id
   and exists (
     select 1
     from public.profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.plan_tier = 'vault_plus'
   )
 );
@@ -699,20 +699,20 @@ create policy "Plus users manage own vehicle service events"
 on public.vehicle_service_events for all
 to authenticated
 using (
-  auth.uid() = user_id
+  (select auth.uid()) = user_id
   and exists (
     select 1
     from public.profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.plan_tier = 'vault_plus'
   )
 )
 with check (
-  auth.uid() = user_id
+  (select auth.uid()) = user_id
   and exists (
     select 1
     from public.profiles
-    where profiles.id = auth.uid()
+    where profiles.id = (select auth.uid())
       and profiles.plan_tier = 'vault_plus'
   )
 );
