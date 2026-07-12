@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarClock, Car, Download, Gauge, Pencil, Plus, Trash2, Wrench, X, type LucideIcon } from "lucide-react";
 import { vehicles as seedVehicles } from "@/lib/demo-data";
 import { Badge } from "@/components/ui/badge";
 import { PremiumLock } from "@/components/ui/premium-lock";
 import { DocumentUploadCard } from "@/components/ui/document-upload-card";
 import type { Vehicle, VehicleStatus } from "@/types/homey";
+import { createClient } from "@/lib/supabase/client";
+import { formatTimestamp } from "@/lib/utils";
 
 const statusTone = {
   excellent: "emerald",
@@ -32,6 +34,38 @@ const emptyVehicle = {
 
 type VehicleFormState = typeof emptyVehicle;
 
+type VehicleRow = {
+  id: string;
+  name: string;
+  make: string | null;
+  model: string | null;
+  year: number | null;
+  mileage: number | null;
+  vin: string | null;
+  last_service_date: string | null;
+  next_service_date: string | null;
+  notes: string | null;
+  status: VehicleStatus;
+};
+
+const vehicleSelect = "id,name,make,model,year,mileage,vin,last_service_date,next_service_date,notes,status";
+
+function mapVehicle(row: VehicleRow): Vehicle {
+  return {
+    id: row.id,
+    name: row.name,
+    make: row.make || "",
+    model: row.model || "",
+    year: row.year || new Date().getFullYear(),
+    mileage: row.mileage || 0,
+    vin: row.vin || undefined,
+    lastServiceDate: row.last_service_date || undefined,
+    nextServiceDate: row.next_service_date || "",
+    notes: row.notes || "",
+    status: row.status,
+  };
+}
+
 function vehicleToForm(vehicle: Vehicle): VehicleFormState {
   return {
     name: vehicle.name,
@@ -48,11 +82,55 @@ function vehicleToForm(vehicle: Vehicle): VehicleFormState {
 }
 
 export function VehicleRepairTracker() {
+  const supabase = useMemo(() => createClient(), []);
   const [vehicles, setVehicles] = useState<Vehicle[]>(seedVehicles);
   const [form, setForm] = useState<VehicleFormState>(emptyVehicle);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notice, setNotice] = useState("Vehicle records are ready for reminders, service dates, and repair history.");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    const client = supabase;
+    let isMounted = true;
+
+    async function loadVehicles() {
+      const { data: sessionData } = await client.auth.getSession();
+      const activeUserId = sessionData.session?.user.id;
+
+      if (!activeUserId) {
+        if (isMounted) setNotice("Demo mode. Login and upgrade to DomiVault Plus to sync vehicle records.");
+        return;
+      }
+
+      setUserId(activeUserId);
+      const { data, error } = await client
+        .from("vehicles")
+        .select(vehicleSelect)
+        .eq("user_id", activeUserId)
+        .order("created_at", { ascending: false });
+
+      if (!isMounted) return;
+
+      if (error) {
+        setNotice(`Vehicle sync error: ${error.message}. Vehicle records require DomiVault Plus.`);
+        return;
+      }
+
+      setVehicles((data || []).map((row) => mapVehicle(row as VehicleRow)));
+      setNotice("Synced with your account. Vehicle records save automatically.");
+    }
+
+    loadVehicles();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase]);
 
   const resetForm = () => {
     setForm(emptyVehicle);
@@ -72,7 +150,7 @@ export function VehicleRepairTracker() {
     setIsModalOpen(true);
   };
 
-  const saveVehicle = (event: React.FormEvent<HTMLFormElement>) => {
+  const saveVehicle = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.name.trim() || !form.make.trim() || !form.model.trim()) return;
 
@@ -90,12 +168,56 @@ export function VehicleRepairTracker() {
       status: form.status,
     };
 
+    if (supabase && userId) {
+      setIsSaving(true);
+      const payload = {
+        user_id: userId,
+        name: nextVehicle.name,
+        make: nextVehicle.make,
+        model: nextVehicle.model,
+        year: nextVehicle.year,
+        mileage: nextVehicle.mileage,
+        vin: nextVehicle.vin || null,
+        last_service_date: nextVehicle.lastServiceDate || null,
+        next_service_date: nextVehicle.nextServiceDate || null,
+        notes: nextVehicle.notes || null,
+        status: nextVehicle.status,
+      };
+      const request = editingId
+        ? supabase.from("vehicles").update(payload).eq("id", editingId).eq("user_id", userId).select(vehicleSelect).single()
+        : supabase.from("vehicles").insert(payload).select(vehicleSelect).single();
+      const { data, error } = await request;
+      setIsSaving(false);
+
+      if (error) {
+        setNotice(`Could not save vehicle: ${error.message}. Confirm your account has DomiVault Plus.`);
+        return;
+      }
+
+      const saved = mapVehicle(data as VehicleRow);
+      setVehicles((current) => editingId ? current.map((vehicle) => vehicle.id === editingId ? saved : vehicle) : [saved, ...current]);
+      setNotice(`${saved.name} ${editingId ? "updated" : "saved"} at ${formatTimestamp(new Date().toISOString())}.`);
+      resetForm();
+      return;
+    }
+
     setVehicles((current) => editingId ? current.map((vehicle) => vehicle.id === editingId ? nextVehicle : vehicle) : [nextVehicle, ...current]);
-    setNotice(`${nextVehicle.name} ${editingId ? "updated" : "saved"}.`);
+    setNotice(`${nextVehicle.name} ${editingId ? "updated" : "saved"} locally. Login and upgrade to sync.`);
     resetForm();
   };
 
-  const deleteVehicle = (vehicle: Vehicle) => {
+  const deleteVehicle = async (vehicle: Vehicle) => {
+    if (supabase && userId && !vehicle.id.startsWith("vehicle-")) {
+      setDeletingId(vehicle.id);
+      const { error } = await supabase.from("vehicles").delete().eq("id", vehicle.id).eq("user_id", userId);
+      setDeletingId(null);
+
+      if (error) {
+        setNotice(`Could not delete vehicle: ${error.message}.`);
+        return;
+      }
+    }
+
     setVehicles((current) => current.filter((item) => item.id !== vehicle.id));
     setNotice(`${vehicle.name} deleted from the vehicle vault.`);
   };
@@ -152,7 +274,7 @@ export function VehicleRepairTracker() {
                 <button onClick={() => openEdit(vehicle)} type="button" className="rounded-xl border border-slate-200 p-2 text-slate-600 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10" aria-label={`Edit ${vehicle.name}`}>
                   <Pencil className="h-4 w-4" />
                 </button>
-                <button onClick={() => deleteVehicle(vehicle)} type="button" className="rounded-xl border border-rose-200 p-2 text-rose-600 transition-all duration-200 hover:bg-rose-50 dark:border-rose-400/20 dark:hover:bg-rose-400/10" aria-label={`Delete ${vehicle.name}`}>
+                <button disabled={deletingId === vehicle.id} onClick={() => deleteVehicle(vehicle)} type="button" className="rounded-xl border border-rose-200 p-2 text-rose-600 transition-all duration-200 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-400/20 dark:hover:bg-rose-400/10" aria-label={`Delete ${vehicle.name}`}>
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
@@ -231,8 +353,8 @@ export function VehicleRepairTracker() {
               <button onClick={resetForm} type="button" className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
                 Cancel
               </button>
-              <button type="submit" className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
-                {editingId ? "Save changes" : "Save vehicle"}
+              <button disabled={isSaving} type="submit" className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950">
+                {isSaving ? "Saving..." : editingId ? "Save changes" : "Save vehicle"}
               </button>
             </div>
           </form>

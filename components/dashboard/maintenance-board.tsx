@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bell, CalendarDays, CalendarPlus, Mail, MessageSquareText, Pencil, Plus, Trash2, UsersRound, X } from "lucide-react";
 import { maintenanceTasks, vendors } from "@/lib/demo-data";
 import { Badge } from "@/components/ui/badge";
 import type { MaintenancePriority, MaintenanceStatus, MaintenanceTask, ReminderChannel } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
 import { PremiumLock } from "@/components/ui/premium-lock";
+import { createGoogleCalendarMaintenanceUrl } from "@/lib/calendar";
+import { createClient } from "@/lib/supabase/client";
 
 const priorityTone = {
   critical: "rose",
@@ -33,14 +35,146 @@ const emptyTask = {
   status: "pending" as MaintenanceStatus,
 };
 
+type MaintenanceTaskRow = {
+  id: string;
+  title: string;
+  area: string | null;
+  instructions: string | null;
+  recurrence_interval_months: number | null;
+  due_date: string;
+  reminder_date: string | null;
+  notification_channel: ReminderChannel | null;
+  vendor_id: string | null;
+  priority: MaintenancePriority;
+  status: MaintenanceStatus;
+  google_calendar_event_id: string | null;
+  google_calendar_html_link: string | null;
+  google_calendar_synced_at: string | null;
+};
+
+type VendorRow = {
+  id: string;
+  company: string;
+};
+
+const taskSelect = "id,title,area,instructions,recurrence_interval_months,due_date,reminder_date,notification_channel,vendor_id,priority,status,google_calendar_event_id,google_calendar_html_link,google_calendar_synced_at";
+const localMaintenanceTasksKey = "domivault-local-maintenance-tasks";
+
+function loadLocalMaintenanceTasks() {
+  try {
+    const savedTasks = window.localStorage.getItem(localMaintenanceTasksKey);
+    return savedTasks ? (JSON.parse(savedTasks) as MaintenanceTask[]) : maintenanceTasks;
+  } catch {
+    return maintenanceTasks;
+  }
+}
+
+function cadenceToMonths(cadence: string) {
+  if (cadence === "Monthly") return 1;
+  if (cadence === "Every 6 months") return 6;
+  if (cadence === "Annually") return 12;
+  return 3;
+}
+
+function monthsToCadence(months?: number | null) {
+  if (months === 1) return "Monthly";
+  if (months === 6) return "Every 6 months";
+  if (months === 12) return "Annually";
+  return "Every 3 months";
+}
+
+function mapTask(row: MaintenanceTaskRow): MaintenanceTask {
+  return {
+    id: row.id,
+    title: row.title,
+    area: row.area || "General",
+    notes: row.instructions || undefined,
+    cadence: monthsToCadence(row.recurrence_interval_months),
+    dueDate: row.due_date,
+    reminderDate: row.reminder_date || undefined,
+    reminderChannel: row.notification_channel || "email",
+    assignedVendorId: row.vendor_id || undefined,
+    priority: row.priority,
+    status: row.status,
+    googleCalendarEventId: row.google_calendar_event_id || undefined,
+    googleCalendarHtmlLink: row.google_calendar_html_link || undefined,
+    googleCalendarSyncedAt: row.google_calendar_synced_at || undefined,
+  };
+}
+
 export function MaintenanceBoard() {
+  const supabase = useMemo(() => createClient(), []);
   const [tasks, setTasks] = useState(maintenanceTasks);
+  const [vendorOptions, setVendorOptions] = useState(vendors.map((vendor) => ({ id: vendor.id, company: vendor.company })));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyTask);
   const [notice, setNotice] = useState("Reminder delivery is ready for email, SMS, push, and calendar export.");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [syncingCalendarId, setSyncingCalendarId] = useState<string | null>(null);
 
-  const addTask = (event: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (!supabase) {
+      setTasks(loadLocalMaintenanceTasks());
+      setNotice("Local mode. Maintenance changes are saved in this browser.");
+      return;
+    }
+
+    const client = supabase;
+    let isMounted = true;
+
+    async function loadRecords() {
+      const { data: sessionData } = await client.auth.getSession();
+      const activeUserId = sessionData.session?.user.id;
+
+      if (!activeUserId) {
+        if (isMounted) {
+          setTasks(loadLocalMaintenanceTasks());
+          setNotice("Local mode. Maintenance changes are saved in this browser. Login to sync across devices.");
+        }
+        return;
+      }
+
+      setUserId(activeUserId);
+      const [taskResult, vendorResult] = await Promise.all([
+        client
+          .from("maintenance_tasks")
+          .select(taskSelect)
+          .eq("user_id", activeUserId)
+          .order("due_date", { ascending: true }),
+        client
+          .from("vendors")
+          .select("id,company")
+          .eq("user_id", activeUserId)
+          .order("company", { ascending: true }),
+      ]);
+
+      if (!isMounted) return;
+
+      if (taskResult.error) {
+        setNotice(`Maintenance sync error: ${taskResult.error.message}`);
+        return;
+      }
+
+      if (vendorResult.error) {
+        setNotice(`Vendor sync warning: ${vendorResult.error.message}`);
+      }
+
+      setTasks((taskResult.data || []).map((row) => mapTask(row as MaintenanceTaskRow)));
+      setVendorOptions((vendorResult.data || []).map((row) => row as VendorRow));
+      setNotice("Synced with your account. Maintenance reminders save automatically.");
+    }
+
+    loadRecords();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase]);
+
+  const addTask = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.title.trim() || !form.area.trim()) return;
 
@@ -58,9 +192,45 @@ export function MaintenanceBoard() {
       status: form.status,
     };
 
+    if (supabase && userId) {
+      setIsSaving(true);
+      const payload = {
+        user_id: userId,
+        title: nextTask.title,
+        area: nextTask.area,
+        instructions: nextTask.notes || null,
+        recurrence_interval_months: cadenceToMonths(nextTask.cadence),
+        due_date: nextTask.dueDate,
+        reminder_date: nextTask.reminderDate || null,
+        notification_channel: nextTask.reminderChannel || "email",
+        vendor_id: nextTask.assignedVendorId || null,
+        priority: nextTask.priority,
+        status: nextTask.status,
+      };
+      const request = editingTaskId
+        ? supabase.from("maintenance_tasks").update(payload).eq("id", editingTaskId).eq("user_id", userId).select(taskSelect).single()
+        : supabase.from("maintenance_tasks").insert(payload).select(taskSelect).single();
+      const { data, error } = await request;
+      setIsSaving(false);
+
+      if (error) {
+        setNotice(`Could not save reminder: ${error.message}`);
+        return;
+      }
+
+      const saved = mapTask(data as MaintenanceTaskRow);
+      setTasks((current) => (editingTaskId ? current.map((task) => (task.id === editingTaskId ? saved : task)) : [saved, ...current]));
+      setForm(emptyTask);
+      setEditingTaskId(null);
+      setIsModalOpen(false);
+      setNotice(`${saved.title} ${editingTaskId ? "updated" : "saved"} at ${formatTimestamp(new Date().toISOString())}. Form cleared.`);
+      return;
+    }
+
     setTasks((current) => {
-      if (!editingTaskId) return [nextTask, ...current];
-      return current.map((task) => (task.id === editingTaskId ? { ...nextTask, id: editingTaskId } : task));
+      const nextTasks = !editingTaskId ? [nextTask, ...current] : current.map((task) => (task.id === editingTaskId ? { ...nextTask, id: editingTaskId } : task));
+      window.localStorage.setItem(localMaintenanceTasksKey, JSON.stringify(nextTasks));
+      return nextTasks;
     });
     setForm(emptyTask);
     setEditingTaskId(null);
@@ -85,14 +255,55 @@ export function MaintenanceBoard() {
     setIsModalOpen(true);
   };
 
-  const deleteTask = (task: MaintenanceTask) => {
-    setTasks((current) => current.filter((item) => item.id !== task.id));
+  const deleteTask = async (task: MaintenanceTask) => {
+    if (supabase && userId && !task.id.startsWith("task-")) {
+      setDeletingId(task.id);
+      const { error } = await supabase.from("maintenance_tasks").delete().eq("id", task.id).eq("user_id", userId);
+      setDeletingId(null);
+
+      if (error) {
+        setNotice(`Could not delete reminder: ${error.message}`);
+        return;
+      }
+    }
+
+    setTasks((current) => {
+      const nextTasks = current.filter((item) => item.id !== task.id);
+      if (!supabase || !userId || task.id.startsWith("task-")) {
+        window.localStorage.setItem(localMaintenanceTasksKey, JSON.stringify(nextTasks));
+      }
+      return nextTasks;
+    });
     setNotice(`${task.title} deleted from maintenance schedule.`);
   };
 
-  const sendTestReminder = (task: MaintenanceTask) => {
+  const sendTestReminder = async (task: MaintenanceTask) => {
     const channel = task.reminderChannel || "email";
-    setNotice(`Prepared ${channel.toUpperCase()} reminder for "${task.title}". Connect provider keys in Settings to send automatically.`);
+
+    if (channel !== "push") {
+      setNotice(`${channel.toUpperCase()} reminder preference saved for "${task.title}".`);
+      return;
+    }
+
+    setNotice(`Sending push reminder for "${task.title}"...`);
+    const response = await fetch("/api/notifications/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "DomiVault maintenance reminder",
+        body: `${task.title} is due ${task.dueDate}.`,
+        tag: `maintenance-${task.id}`,
+        url: "/maintenance",
+      }),
+    });
+    const payload = await response.json().catch(() => ({ message: "Push reminder failed." }));
+
+    if (!response.ok) {
+      setNotice(payload.message || "Push reminder failed.");
+      return;
+    }
+
+    setNotice(`Push reminder sent for "${task.title}".`);
   };
 
   const downloadCalendarEvent = (task: MaintenanceTask) => {
@@ -118,6 +329,41 @@ export function MaintenanceBoard() {
     setNotice(`Calendar file created for "${task.title}".`);
   };
 
+  const openGoogleCalendar = (task: MaintenanceTask) => {
+    window.open(createGoogleCalendarMaintenanceUrl(task), "_blank", "noopener,noreferrer");
+    setNotice(`Opened Google Calendar event draft for "${task.title}". Review it, then save it in Google Calendar.`);
+  };
+
+  const syncGoogleCalendar = async (task: MaintenanceTask) => {
+    setSyncingCalendarId(task.id);
+    setNotice(`Syncing "${task.title}" to Google Calendar...`);
+    const response = await fetch("/api/google/calendar/sync-maintenance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task }),
+    });
+    const payload = await response.json().catch(() => ({ message: "Google Calendar sync failed." })) as {
+      message?: string;
+      eventId?: string;
+      htmlLink?: string | null;
+      syncedAt?: string;
+    };
+    setSyncingCalendarId(null);
+
+    if (!response.ok) {
+      setNotice(payload.message || "Google Calendar sync failed.");
+      return;
+    }
+
+    setTasks((current) => current.map((item) => item.id === task.id ? {
+      ...item,
+      googleCalendarEventId: payload.eventId || item.googleCalendarEventId,
+      googleCalendarHtmlLink: payload.htmlLink || item.googleCalendarHtmlLink,
+      googleCalendarSyncedAt: payload.syncedAt || new Date().toISOString(),
+    } : item));
+    setNotice(`Synced "${task.title}" to Google Calendar.`);
+  };
+
   return (
     <section className="space-y-4">
       <div className="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
@@ -139,7 +385,7 @@ export function MaintenanceBoard() {
       </div>
       <div className="grid gap-4 lg:grid-cols-3">
         {tasks.map((task) => {
-          const vendor = vendors.find((item) => item.id === task.assignedVendorId);
+          const vendor = vendorOptions.find((item) => item.id === task.assignedVendorId);
 
           return (
             <article key={task.id} className="rounded-3xl border border-slate-200/70 bg-white/80 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-white/[0.05]">
@@ -186,14 +432,27 @@ export function MaintenanceBoard() {
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Due {task.dueDate}</span>
                 <Badge tone={priorityTone[task.priority]}>{task.priority}</Badge>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="mt-4 grid gap-2">
+                <button disabled={syncingCalendarId === task.id} onClick={() => syncGoogleCalendar(task)} type="button" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-slate-950 px-3 py-2 text-center text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950">
+                  <CalendarPlus className="h-4 w-4 shrink-0" />
+                  <span>{syncingCalendarId === task.id ? "Syncing..." : task.googleCalendarEventId ? "Update synced event" : "Sync to Google"}</span>
+                </button>
+                <button onClick={() => openGoogleCalendar(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                  <CalendarPlus className="h-4 w-4" />
+                  Add to Google Calendar
+                </button>
+                {task.googleCalendarSyncedAt && (
+                  <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">Last synced {formatTimestamp(task.googleCalendarSyncedAt)}</p>
+                )}
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2">
                 <button onClick={() => sendTestReminder(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
                   <Bell className="h-4 w-4" />
                   Test
                 </button>
                 <button onClick={() => downloadCalendarEvent(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-950 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
                   <CalendarPlus className="h-4 w-4" />
-                  Calendar
+                  .ics file
                 </button>
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2">
@@ -201,9 +460,9 @@ export function MaintenanceBoard() {
                   <Pencil className="h-4 w-4" />
                   Edit
                 </button>
-                <button onClick={() => deleteTask(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 text-sm font-semibold text-rose-700 transition-all duration-200 hover:bg-rose-50 dark:border-rose-400/20 dark:text-rose-200 dark:hover:bg-rose-400/10">
+                <button disabled={deletingId === task.id} onClick={() => deleteTask(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 text-sm font-semibold text-rose-700 transition-all duration-200 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-400/20 dark:text-rose-200 dark:hover:bg-rose-400/10">
                   <Trash2 className="h-4 w-4" />
-                  Delete
+                  {deletingId === task.id ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </article>
@@ -215,7 +474,7 @@ export function MaintenanceBoard() {
         {notice}
       </div>
 
-      <PremiumLock title="Google Calendar sync and maintenance history" description="Add reminders to Google Calendar, keep completed maintenance history, and export service records with DomiVault Plus." />
+      <PremiumLock title="Automatic Google Calendar sync and maintenance history" description="Free accounts can create Google Calendar event drafts from each maintenance card. DomiVault Plus will unlock automatic two-way calendar sync, completed maintenance history, and exportable service records." />
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4 backdrop-blur-sm">
@@ -249,7 +508,7 @@ export function MaintenanceBoard() {
               <Field label="Assigned vendor">
                 <select value={form.assignedVendorId} onChange={(event) => setForm({ ...form, assignedVendorId: event.target.value })} className="input">
                   <option value="">Unassigned</option>
-                  {vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.company}</option>)}
+                  {vendorOptions.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.company}</option>)}
                 </select>
               </Field>
               <Field label="Due date">
@@ -281,8 +540,8 @@ export function MaintenanceBoard() {
               <button onClick={() => { setIsModalOpen(false); setEditingTaskId(null); setForm(emptyTask); }} type="button" className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
                 Cancel
               </button>
-              <button type="submit" className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
-                {editingTaskId ? "Update reminder" : "Save reminder"}
+              <button disabled={isSaving} type="submit" className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950">
+                {isSaving ? "Saving..." : editingTaskId ? "Update reminder" : "Save reminder"}
               </button>
             </div>
           </form>

@@ -22,6 +22,25 @@ type ExpenseRow = {
   document_url: string | null;
 };
 
+const localMaintenanceTasksKey = "domivault-local-maintenance-tasks";
+const localAppliancesKey = "domivault-local-appliances";
+
+function readLocalDashboardData() {
+  try {
+    const localTasks = JSON.parse(window.localStorage.getItem(localMaintenanceTasksKey) || "null") as typeof maintenanceTasks | null;
+    const localAppliances = JSON.parse(window.localStorage.getItem(localAppliancesKey) || "null") as typeof appliances | null;
+    return {
+      tasks: localTasks || maintenanceTasks,
+      applianceRecords: localAppliances || appliances,
+    };
+  } catch {
+    return {
+      tasks: maintenanceTasks,
+      applianceRecords: appliances,
+    };
+  }
+}
+
 function mapExpense(row: ExpenseRow): Expense {
   return {
     id: row.id,
@@ -39,47 +58,82 @@ function mapExpense(row: ExpenseRow): Expense {
 export function DashboardOverview() {
   const supabase = useMemo(() => createClient(), []);
   const [expenses, setExpenses] = useState(seedExpenses);
+  const [upcomingTasks, setUpcomingTasks] = useState(maintenanceTasks.filter((task) => task.status !== "completed").length);
+  const [serviceSoon, setServiceSoon] = useState(appliances.filter((appliance) => appliance.status === "service-soon" || appliance.status === "replace").length);
   const [syncMessage, setSyncMessage] = useState("Dashboard is using demo expense data. Login and run the database setup to sync.");
 
   useEffect(() => {
-    if (!supabase) return;
+    const loadLocalDashboardData = () => {
+      const { tasks, applianceRecords } = readLocalDashboardData();
+      setUpcomingTasks(tasks.filter((task) => task.status !== "completed").length);
+      setServiceSoon(applianceRecords.filter((appliance) => appliance.status === "service-soon" || appliance.status === "replace").length);
+      setSyncMessage("Dashboard is using browser-local records. Login to sync across devices.");
+    };
+
+    if (!supabase) {
+      loadLocalDashboardData();
+      window.addEventListener("focus", loadLocalDashboardData);
+      return () => window.removeEventListener("focus", loadLocalDashboardData);
+    }
 
     const client = supabase;
     let isMounted = true;
 
-    async function loadExpenses() {
+    async function loadDashboardData() {
       const { data: sessionData } = await client.auth.getSession();
       const userId = sessionData.session?.user.id;
-      if (!userId) return;
-
-      const { data, error } = await client
-        .from("expenses")
-        .select("id,project_id,category,vendor,description,amount,expense_date,tax_deductible,document_url")
-        .eq("user_id", userId)
-        .order("expense_date", { ascending: false });
-
-      if (!isMounted) return;
-
-      if (error) {
-        setSyncMessage(`Dashboard could not load synced expenses: ${error.message}`);
+      if (!userId) {
+        if (isMounted) loadLocalDashboardData();
         return;
       }
 
-      setExpenses((data || []).map((row) => mapExpense(row as ExpenseRow)));
-      setSyncMessage("Dashboard totals are calculated from your synced expense records.");
+      const [expenseResult, taskResult, applianceResult] = await Promise.all([
+        client
+          .from("expenses")
+          .select("id,project_id,category,vendor,description,amount,expense_date,tax_deductible,document_url")
+          .eq("user_id", userId)
+          .order("expense_date", { ascending: false }),
+        client
+          .from("maintenance_tasks")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .neq("status", "completed"),
+        client
+          .from("appliances")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .in("status", ["service-soon", "replace"]),
+      ]);
+
+      if (!isMounted) return;
+
+      if (expenseResult.error || taskResult.error || applianceResult.error) {
+        setSyncMessage(`Dashboard could not load synced records: ${expenseResult.error?.message || taskResult.error?.message || applianceResult.error?.message}`);
+        return;
+      }
+
+      setExpenses((expenseResult.data || []).map((row) => mapExpense(row as ExpenseRow)));
+      setUpcomingTasks(taskResult.count || 0);
+      setServiceSoon(applianceResult.count || 0);
+      setSyncMessage("Dashboard totals are calculated from your synced records.");
     }
 
-    loadExpenses();
+    loadDashboardData();
+    const refreshOnFocus = () => loadDashboardData();
+    window.addEventListener("focus", refreshOnFocus);
+    const { data: authListener } = client.auth.onAuthStateChange(() => {
+      loadDashboardData();
+    });
 
     return () => {
       isMounted = false;
+      window.removeEventListener("focus", refreshOnFocus);
+      authListener.subscription.unsubscribe();
     };
   }, [supabase]);
 
   const totalInvested = expenses.filter((expense) => expense.category !== "utilities").reduce((sum, expense) => sum + expense.amount, 0);
   const utilitySpend = expenses.filter((expense) => expense.category === "utilities").reduce((sum, expense) => sum + expense.amount, 0);
-  const upcomingTasks = maintenanceTasks.filter((task) => task.status !== "completed").length;
-  const serviceSoon = appliances.filter((appliance) => appliance.status === "service-soon" || appliance.status === "replace").length;
 
   return (
     <div className="space-y-6">

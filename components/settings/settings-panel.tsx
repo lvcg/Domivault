@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bell, CalendarDays, Home, Mail, Moon, Save, Sparkles } from "lucide-react";
+import { Bell, BellRing, CalendarDays, Home, Mail, Moon, Save, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { PlanTier, ReminderChannel } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
+import { useDomiVaultUser } from "@/components/auth/domivault-user-provider";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { SubscriptionStatusCard } from "@/components/billing/subscription-status-card";
 
 type SettingsState = {
   username: string;
@@ -33,14 +36,21 @@ type ProfileRow = {
   updated_at?: string | null;
 };
 
+type CalendarConnectionState = {
+  connected: boolean;
+  googleEmail?: string | null;
+  connectedAt?: string | null;
+  message?: string | null;
+};
+
 const defaultSettings: SettingsState = {
   username: "",
   homeName: "",
   address: "",
   email: "",
   reminderChannel: "email",
-  calendarSync: true,
-  receiptScan: true,
+  calendarSync: false,
+  receiptScan: false,
   darkMode: false,
   planTier: "free",
 };
@@ -57,16 +67,31 @@ function saveLocalSettings(settings: SettingsState, savedAt?: string) {
 
 export function SettingsPanel() {
   const supabase = useMemo(() => createClient(), []);
+  const { isPlusUser, planTier: activePlanTier } = useDomiVaultUser();
+  const pushNotifications = usePushNotifications();
   const [settings, setSettings] = useState<SettingsState>(defaultSettings);
   const [message, setMessage] = useState("Login to sync settings to your secure account.");
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [calendarConnection, setCalendarConnection] = useState<CalendarConnectionState>({ connected: false });
+  const [isCalendarLoading, setIsCalendarLoading] = useState(false);
 
   const updateSetting = <Key extends keyof SettingsState>(key: Key, value: SettingsState[Key]) => {
     setSettings((current) => ({ ...current, [key]: value }));
   };
+
+  useEffect(() => {
+    setSettings((current) => ({
+      ...current,
+      calendarSync: isPlusUser ? current.calendarSync : false,
+      receiptScan: isPlusUser ? current.receiptScan : false,
+      planTier: activePlanTier,
+    }));
+  }, [activePlanTier, isPlusUser]);
 
   useEffect(() => {
     const localSettings = localStorage.getItem("homey-settings");
@@ -101,7 +126,8 @@ export function SettingsPanel() {
         .maybeSingle();
 
       if (error) {
-        setMessage(`Could not load profile: ${error.message}`);
+        console.error("Profile load failed:", error);
+        setMessage("Could not load your profile. Try refreshing the page.");
         return;
       }
 
@@ -117,7 +143,7 @@ export function SettingsPanel() {
           calendarSync: typeof profile.calendar_sync === "boolean" ? profile.calendar_sync : current.calendarSync,
           receiptScan: typeof profile.receipt_scan === "boolean" ? profile.receipt_scan : current.receiptScan,
           darkMode: typeof profile.dark_mode === "boolean" ? profile.dark_mode : current.darkMode,
-          planTier: profile.plan_tier || current.planTier,
+          planTier: activePlanTier || profile.plan_tier || current.planTier,
         };
         applyTheme(nextSettings.darkMode);
         saveLocalSettings(nextSettings, profile.settings_saved_at || profile.updated_at || undefined);
@@ -130,7 +156,59 @@ export function SettingsPanel() {
     }
 
     loadProfile();
-  }, [supabase]);
+  }, [activePlanTier, supabase]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const calendarStatus = params.get("calendar");
+    const calendarMessage = params.get("message");
+
+    if (calendarStatus === "connected") {
+      setMessage("Google Calendar connected. Maintenance reminders can now sync from the Maintenance page.");
+    }
+
+    if (calendarStatus === "error" || calendarStatus === "config-error") {
+      setMessage(calendarMessage || "Google Calendar could not be connected. Check the Google OAuth configuration.");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!userId || !isPlusUser) {
+      setCalendarConnection({ connected: false });
+      return;
+    }
+
+    refreshCalendarConnection();
+  }, [isPlusUser, userId]);
+
+  const refreshCalendarConnection = async () => {
+    setIsCalendarLoading(true);
+    const response = await fetch("/api/google/calendar/status");
+    const payload = await response.json().catch(() => ({ connected: false, message: "Could not load Google Calendar status." })) as CalendarConnectionState;
+    setIsCalendarLoading(false);
+
+    if (!response.ok) {
+      setCalendarConnection({ connected: false, message: payload.message || "Could not load Google Calendar status." });
+      return;
+    }
+
+    setCalendarConnection(payload);
+  };
+
+  const disconnectGoogleCalendar = async () => {
+    setIsCalendarLoading(true);
+    const response = await fetch("/api/google/calendar/disconnect", { method: "POST" });
+    const payload = await response.json().catch(() => ({ message: "Could not disconnect Google Calendar." })) as { message?: string };
+    setIsCalendarLoading(false);
+
+    if (!response.ok) {
+      setMessage(payload.message || "Could not disconnect Google Calendar.");
+      return;
+    }
+
+    setCalendarConnection({ connected: false });
+    setMessage("Google Calendar disconnected.");
+  };
 
   const saveSettings = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -145,8 +223,7 @@ export function SettingsPanel() {
       return;
     }
 
-    setIsSaving(true);
-    const { error } = await supabase.from("profiles").upsert({
+    const fullProfilePayload = {
       id: userId,
       home_name: settings.homeName,
       home_address: settings.address,
@@ -158,11 +235,35 @@ export function SettingsPanel() {
       receipt_scan: settings.receiptScan,
       dark_mode: settings.darkMode,
       settings_saved_at: savedAt,
-    });
+    };
+    const coreProfilePayload = {
+      id: userId,
+      home_name: settings.homeName,
+      home_address: settings.address,
+      home_type: "single_family",
+      full_name: settings.username,
+    };
+
+    setIsSaving(true);
+    let { error } = await supabase.from("profiles").upsert(fullProfilePayload);
+
+    if (error && (error.message.includes("schema cache") || error.message.includes("column"))) {
+      const retry = await supabase.from("profiles").upsert(coreProfilePayload);
+      error = retry.error;
+
+      if (!error) {
+        setIsSaving(false);
+        setLastSavedAt(savedAt);
+        setMessage(`Username and basic profile saved at ${formatTimestamp(savedAt)}. Optional settings need the latest Supabase schema before they can sync.`);
+        return;
+      }
+    }
+
     setIsSaving(false);
 
     if (error) {
-      setMessage(`Could not save profile: ${error.message}. Run the latest database schema if the new profile settings columns are missing.`);
+      console.error("Profile save failed:", error);
+      setMessage("Could not save your profile. Check your database setup and try again.");
       return;
     }
 
@@ -170,16 +271,29 @@ export function SettingsPanel() {
     setMessage(`Settings backed up to your profile at ${formatTimestamp(savedAt)}.`);
   };
 
+  const deleteAccount = async () => {
+    if (deleteConfirmation.trim() !== "DELETE") {
+      setMessage("Type DELETE to confirm account deletion.");
+      return;
+    }
+
+    setIsDeleting(true);
+    const response = await fetch("/api/account", { method: "DELETE" });
+    const payload = await response.json().catch(() => ({ message: "Could not delete account." }));
+    setIsDeleting(false);
+
+    if (!response.ok) {
+      setMessage(payload.message || "Could not delete account.");
+      return;
+    }
+
+    localStorage.removeItem("homey-settings");
+    await supabase?.auth.signOut();
+    window.location.href = "/login?account=deleted";
+  };
+
   return (
     <section className="space-y-5">
-      <div className="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
-        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">Workspace settings</p>
-        <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">Home profile, reminders, and integrations</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-          Configure the default home profile, reminder delivery, receipt scanning, and calendar sync behavior.
-        </p>
-      </div>
-
       <form onSubmit={saveSettings} className="grid gap-4 xl:grid-cols-[1fr_0.8fr]">
         <div className="rounded-3xl border border-slate-200/70 bg-white/85 p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
           <div className="mb-5 flex items-center gap-3">
@@ -194,7 +308,7 @@ export function SettingsPanel() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Username">
-              <input value={settings.username} onChange={(event) => updateSetting("username", event.target.value)} className="input" placeholder="liv4000" />
+              <input value={settings.username} onChange={(event) => updateSetting("username", event.target.value)} className="input" placeholder="username" />
             </Field>
             <Field label="Home name">
               <input value={settings.homeName} onChange={(event) => updateSetting("homeName", event.target.value)} className="input" />
@@ -227,8 +341,63 @@ export function SettingsPanel() {
                 <option value="push">Push</option>
               </select>
             </Field>
-            <Toggle icon={CalendarDays} label="Calendar sync" checked={settings.calendarSync} onChange={(checked) => updateSetting("calendarSync", checked)} />
-            <Toggle icon={Mail} label="Receipt scan suggestions" checked={settings.receiptScan} onChange={(checked) => updateSetting("receiptScan", checked)} />
+            <div className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/5">
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  <BellRing className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+                  Browser push reminders
+                </span>
+                <button
+                  onClick={pushNotifications.status === "enabled" ? pushNotifications.unregisterPushNotifications : pushNotifications.registerPushNotifications}
+                  type="button"
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950"
+                >
+                  {pushNotifications.status === "enabled" ? "Disable push" : "Enable push"}
+                </button>
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">{pushNotifications.message}</p>
+            </div>
+            <Toggle icon={CalendarDays} label="Calendar sync (Plus)" checked={isPlusUser && settings.calendarSync} disabled={!isPlusUser} onChange={(checked) => updateSetting("calendarSync", checked)} />
+            <div className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-white/5">
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  <CalendarDays className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+                  Google Calendar
+                </span>
+                {!isPlusUser ? (
+                  <a
+                    href="/plus?feature=google-calendar"
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl bg-slate-950 px-4 py-2 text-center text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950"
+                  >
+                    Upgrade to connect
+                  </a>
+                ) : calendarConnection.connected ? (
+                  <button
+                    onClick={disconnectGoogleCalendar}
+                    disabled={isCalendarLoading}
+                    type="button"
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10"
+                  >
+                    {isCalendarLoading ? "Disconnecting..." : "Disconnect"}
+                  </button>
+                ) : (
+                  <a
+                    href="/api/google/calendar/connect"
+                    className="inline-flex min-h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-center text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                  >
+                    Connect Google
+                  </a>
+                )}
+              </div>
+              <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                {!isPlusUser
+                  ? "Google Calendar sync is included with DomiVault Plus."
+                  : calendarConnection.connected
+                    ? `Connected${calendarConnection.googleEmail ? ` to ${calendarConnection.googleEmail}` : ""}. Maintenance reminders can sync automatically from each task card.`
+                    : calendarConnection.message || "Connect your Google account to create and update reminder events from DomiVault."}
+              </p>
+            </div>
+            <Toggle icon={Mail} label="Receipt scan suggestions (Plus)" checked={isPlusUser && settings.receiptScan} disabled={!isPlusUser} onChange={(checked) => updateSetting("receiptScan", checked)} />
             <Toggle icon={Moon} label="Dark mode" checked={settings.darkMode} onChange={(checked) => {
               const nextSettings = { ...settings, darkMode: checked };
               setSettings(nextSettings);
@@ -242,20 +411,7 @@ export function SettingsPanel() {
           {message}
         </div>
 
-        <div id="plan" className="xl:col-span-2 rounded-3xl border border-slate-200/70 bg-white/85 p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">Plan</p>
-          <h3 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">{settings.planTier === "free" ? "DomiVault Free" : "DomiVault Plus"}</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            Free includes core home records. Plus unlocks warranty tracking, receipt storage, maintenance history, Google Calendar sync, vehicle repair records, expiration alerts, and export reports. Plan changes are controlled by billing and are not editable from profile settings.
-          </p>
-          <a
-            href="mailto:flowfxdesignsonline@gmail.com?subject=DomiVault%20Plus%20Upgrade"
-            className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950"
-          >
-            <Sparkles className="h-4 w-4" />
-            Request DomiVault Plus
-          </a>
-        </div>
+        <SubscriptionStatusCard fallbackIsPlus={isPlusUser} />
 
         <div className="xl:col-span-2 grid gap-3 rounded-3xl border border-slate-200/70 bg-white/85 p-4 text-sm shadow-sm dark:border-white/10 dark:bg-white/[0.05] md:grid-cols-2">
           <div>
@@ -275,6 +431,33 @@ export function SettingsPanel() {
           </button>
         </div>
       </form>
+
+      <section className="rounded-3xl border border-rose-200 bg-rose-50 p-5 shadow-sm dark:border-rose-400/20 dark:bg-rose-400/10">
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-rose-700 dark:text-rose-200">Danger zone</p>
+            <h3 className="mt-2 text-xl font-semibold text-rose-950 dark:text-white">Delete my account</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-rose-900/80 dark:text-rose-50/85">
+              This permanently deletes your DomiVault account and account-owned records. This action requires server-side account deletion to be configured with Supabase.
+            </p>
+          </div>
+          <div className="grid w-full gap-3 lg:w-80">
+            <label className="grid gap-2 text-sm font-semibold text-rose-900 dark:text-rose-50">
+              Type DELETE to confirm
+              <input value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value)} className="input" placeholder="DELETE" />
+            </label>
+            <button
+              disabled={isDeleting || deleteConfirmation.trim() !== "DELETE"}
+              onClick={deleteAccount}
+              type="button"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-rose-600 px-5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 className="h-4 w-4" />
+              {isDeleting ? "Deleting..." : "Delete my account"}
+            </button>
+          </div>
+        </div>
+      </section>
     </section>
   );
 }
@@ -288,14 +471,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Toggle({ icon: Icon, label, checked, onChange }: { icon: typeof Bell; label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+function Toggle({ icon: Icon, label, checked, disabled = false, onChange }: { icon: typeof Bell; label: string; checked: boolean; disabled?: boolean; onChange: (checked: boolean) => void }) {
   return (
     <label className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 text-sm font-semibold text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
       <span className="inline-flex items-center gap-2">
         <Icon className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
         {label}
       </span>
-      <input checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-emerald-600" type="checkbox" />
+      <input disabled={disabled} checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-emerald-600 disabled:cursor-not-allowed disabled:opacity-50" type="checkbox" />
     </label>
   );
 }

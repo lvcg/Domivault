@@ -1,8 +1,18 @@
 # DomiVault
 
-DomiVault is a premium home command center for keeping home improvement spending, utility bills, appliance records, repair reminders, vendor contacts, vehicle service notes, and important documents organized in one secure dashboard.
+**DomiVault is a premium home command center and secure records vault for homeowners.**
 
-It is built as a responsive Next.js app with Supabase-ready auth, database tables, storage rules, and row-level security so each user only sees their own home records.
+It centralizes the operational side of home ownership: improvement expenses, utility bills, project planning, maintenance reminders, appliance warranties, vendor contacts, vehicle service records, receipts, and exportable reports. The application is built as a production-oriented SaaS foundation with authentication, user-scoped data, document storage, OCR scanning, premium feature gates, and deployment-ready configuration.
+
+## Live Product
+
+| Resource | URL |
+| --- | --- |
+| Live app | https://domivaultapp.com |
+| Privacy policy | https://domivaultapp.com/privacy |
+| Terms of service | https://domivaultapp.com/terms |
+
+> DomiVault helps homeowners keep receipts, warranties, maintenance records, and repair history organized before they need them.
 
 ## Screenshots
 
@@ -23,44 +33,68 @@ It is built as a responsive Next.js app with Supabase-ready auth, database table
 <video src="public/demo/domivault-walkthrough.mp4" controls width="100%"></video>
 ## Core Features
 
-- Personalized Home Command Center that greets the user by username and shows the last saved timestamp.
-- Expense and utility bill tracker with editable records, project links, category filters, optional tax-review markers, and energy-efficiency tax credit guidance.
-- Separate project planner so planned budgets do not distort actual expense totals.
-- Maintenance scheduler with notes, recurring intervals, reminder channels, calendar export, and completion status.
-- Appliance tracker with age, service dates, warranty expiration alerts, notes, and edit/delete actions.
-- Vendor address book for contractors, home service providers, appliance repair, and preferred contacts.
-- Settings page for username, home profile, reminder defaults, theme, plan tier, and profile backup timestamps.
-- FAQ page for onboarding and product explanation.
+### Secure Data Vaulting
 
-## Free vs. DomiVault Plus
+- Supabase Auth manages user identity, login, password recovery, and OAuth-ready sign-in.
+- Supabase Postgres stores home, project, expense, vendor, appliance, vehicle, reminder, and document metadata.
+- Row-Level Security policies scope records to `auth.uid()` so users can only access their own data.
+- Supabase Storage supports private receipt, warranty, and document assets.
+- Document metadata links uploaded files to the relevant expense, appliance, vehicle, task, or service event.
 
-| Area | Free | DomiVault Plus |
+### Home Operations Command Center
+
+- Personalized dashboard with username-aware greeting, saved timestamp, expense totals, service-watch counts, and upcoming maintenance tasks.
+- Project planner separates planned budgets from real expense totals so forecasting does not distort financial reporting.
+- Expense and utility organizer supports editable records, categories, vendors, project links, tax-review markers, and report generation.
+- Maintenance scheduler tracks recurring tasks, notes, due dates, reminder channels, status, and calendar export.
+- Appliance tracker manages age, service dates, warranty expiration alerts, notes, edit/delete behavior, and linked vendors.
+- Vehicle section tracks vehicle records, repair reminders, and service history foundations.
+
+### Automated OCR Scanning
+
+- Tesseract.js performs client-side OCR for receipt and warranty image scans.
+- Canvas-based preprocessing improves OCR readiness before text extraction.
+- Text-like uploads such as TXT, CSV, JSON, and Markdown can be extracted directly.
+- OCR output can be stored with document metadata for future searching, reporting, and review.
+
+> OCR currently targets image and camera-based scans. Image-based PDF OCR requires a PDF-to-image conversion step before Tesseract can parse the document pages.
+
+### Analytical Insights and Exports
+
+- Recharts powers visual spending breakdowns and dashboard reporting.
+- Report export endpoints support CSV/PDF generation paths for entitled users.
+- Metrics distinguish actual spending from planned project budgets.
+- Plus-tier export gates are designed for API-level enforcement, not only UI locking.
+
+### Notifications and Calendar Workflows
+
+- Browser push notification registration is modeled with VAPID subscriptions stored on the user profile.
+- Maintenance tasks support reminder channels including email, SMS, and push.
+- Calendar export is available for maintenance tasks.
+- Full Google Calendar sync is structured as a DomiVault Plus feature.
+
+## Deep-Dive Tech Stack
+
+| Layer | Technology | Why it was chosen |
 | --- | --- | --- |
-| Dashboard, projects, expenses, vendors | Included | Included |
-| Appliance list and basic service dates | Included | Included |
-| Warranty tracking and expiration alerts | Preview locked | Included |
-| Receipt and document storage | Preview locked | Included |
-| Maintenance history | Preview locked | Included |
-| Google Calendar sync | Preview locked | Included |
-| Vehicle repair records | Preview locked | Included |
-| Export reports | Preview locked | Included |
+| Application framework | Next.js App Router | Provides file-based routing, server/client boundaries, API routes, production build optimization, and Vercel-native deployment. |
+| UI runtime | React + TypeScript | Enables typed component architecture, safer state management, and reusable feature modules. |
+| Styling | Tailwind CSS | Supports fast, consistent, responsive UI development with dark/light mode styling and minimal CSS overhead. |
+| Backend-as-a-Service | Supabase | Combines Auth, Postgres, Storage, RLS, and SQL-based portability without building a full custom backend. |
+| Database | Supabase Postgres | Relational schema fits user-owned home records, linked projects, documents, vehicles, tasks, and vendors. |
+| Authorization | Supabase RLS | Enforces user-scoped data access directly at the database policy layer. |
+| File storage | Supabase Storage | Stores private receipts, warranties, and home/vehicle documents with metadata references in Postgres. |
+| OCR | Tesseract.js | Enables private client-side parsing without sending images to a third-party OCR provider by default. |
+| Charts | Recharts | Provides composable React charts for financial and maintenance insights. |
+| Icons | Lucide React | Keeps interface iconography lightweight, consistent, and accessible. |
+| Billing foundation | RevenueCat | Provides subscription entitlement checks for DomiVault Plus and webhook-driven profile updates. |
+| Testing | Jest + Playwright | Covers unit-level behavior and end-to-end workflows for dashboard sync, deletes, Plus gates, exports, and push setup. |
 
-Paid features are represented in the UI with DomiVault Plus locks so the product shape is visible while the billing layer is still being connected.
-
-## Tech Stack
-
-- Next.js App Router
-- React and TypeScript
-- Tailwind CSS
-- Supabase Auth, Postgres, Storage, and RLS
-- Tesseract.js OCR for receipt and warranty image scans
-- Recharts
-- Lucide icons
-
-## Folder Structure
+## Project Structure
 
 ```text
 app/
+  api/
   appliances/
   auth/
   dashboard/
@@ -68,20 +102,28 @@ app/
   faq/
   login/
   maintenance/
+  oauth/
+  plus/
+  privacy/
   projects/
   reports/
+  scanner/
   settings/
+  terms/
   vehicles/
   vendors/
 components/
   appliances/
   auth/
+  billing/
   dashboard/
+  documents/
   expenses/
   faq/
   layout/
   projects/
   reports/
+  scanner/
   settings/
   ui/
   vehicles/
@@ -94,13 +136,52 @@ public/
   screenshots/
 supabase/
   schema.sql
+  push-notifications.sql
+  rls-smoke-tests.sql
+tests/
+  e2e/
 types/
 ```
 
-## Getting Started
+## Local Development Setup
+
+### Prerequisites
+
+- Node.js 20+
+- npm
+- A Supabase project for auth, database, and storage features
+- Optional: RevenueCat project for subscription testing
+
+### 1. Install Dependencies
 
 ```bash
 npm install
+```
+
+### 2. Configure Environment Variables
+
+Create `.env.local` in the project root:
+
+```bash
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+NEXT_PUBLIC_REVENUECAT_API_KEY=your_revenuecat_web_sdk_key
+NEXT_PUBLIC_REVENUECAT_ENTITLEMENT_ID=premium_access
+REVENUECAT_WEBHOOK_AUTH_TOKEN=your_revenuecat_webhook_auth_value
+REVENUECAT_WEBHOOK_SIGNING_SECRET=your_revenuecat_hmac_signing_secret
+
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=your_vapid_public_key
+VAPID_PRIVATE_KEY=your_vapid_private_key
+VAPID_SUBJECT=mailto:support@domivaultapp.com
+```
+
+> Never commit `.env.local`. Keep production secrets in Vercel environment variables, Supabase Vault, or the relevant provider dashboard.
+
+### 3. Run The App
+
+```bash
 npm run dev
 ```
 
@@ -110,26 +191,19 @@ Open:
 http://localhost:3000
 ```
 
-The app can render in local preview mode without Supabase keys. Add Supabase keys when you want auth and profile sync.
-
-## Environment
-
-Create `.env.local` in the project root:
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-Do not commit `.env.local`. Keep real service keys in Supabase, hosting-provider environment variables, or Supabase Vault for server-side secrets.
-
-Use `.env.production.example` as the production hosting checklist.
+DomiVault can render in local preview mode without Supabase keys, but authentication, profile sync, storage uploads, RLS checks, and server-backed features require Supabase configuration.
 
 ## Supabase Setup
 
-Run the SQL in `supabase/schema.sql` inside the Supabase SQL editor.
+### 1. Apply The Main Schema
 
-The schema creates:
+Run the SQL in:
+
+```text
+supabase/schema.sql
+```
+
+The schema creates the core DomiVault data model:
 
 - `profiles`
 - `projects`
@@ -145,96 +219,229 @@ The schema creates:
 - `vehicle_service_events`
 - private `receipts` storage bucket
 
-RLS policies are enabled for every app table so authenticated users can only manage rows scoped to their own `auth.uid()`.
+### 2. Apply Push Notification Columns
 
-Use `supabase/rls-smoke-tests.sql` as the manual two-user RLS checklist after the schema is applied.
+If push setup reports missing profile fields, run:
 
-## Auth Setup
+```text
+supabase/push-notifications.sql
+```
+
+This adds:
+
+- `profiles.push_enabled`
+- `profiles.push_subscription`
+- `profiles.push_subscription_saved_at`
+
+### 3. Validate RLS
+
+Use:
+
+```text
+supabase/rls-smoke-tests.sql
+```
+
+Recommended manual checks:
+
+1. Create test user A.
+2. Create test user B.
+3. Insert records for user A.
+4. Confirm user B cannot select, update, or delete user A records.
+5. Confirm Plus-only rows/actions are rejected for a free-tier profile where applicable.
+
+## Auth Configuration
 
 In Supabase Auth settings:
 
-- Enable email/password sign-in.
-- Enable magic links if you want passwordless login.
-- Enable Google OAuth only if you want the Google button active.
-- Keep GitHub OAuth disabled unless it is intentionally reintroduced.
-- Set the Site URL to your DomiVault app URL.
-- Add redirect URLs for local and production:
+1. Enable email/password sign-in.
+2. Enable magic links if passwordless login is desired.
+3. Enable Google OAuth only after Google Cloud OAuth credentials are configured.
+4. Set the Site URL:
+
+```text
+https://domivaultapp.com
+```
+
+Add redirect URLs:
 
 ```text
 http://localhost:3000/auth/callback
 http://localhost:3005/auth/callback
 http://localhost:3000/auth/update-password
 http://localhost:3005/auth/update-password
-https://your-production-domain.com/auth/callback
-https://your-production-domain.com/auth/update-password
+https://domivaultapp.com/auth/callback
+https://domivaultapp.com/auth/update-password
 ```
 
-Password recovery should point to DomiVault:
+Password recovery should resolve to:
 
 ```text
-https://your-production-domain.com/auth/update-password
+https://domivaultapp.com/auth/update-password
 ```
 
-For local development, use:
+## Google OAuth Setup
+
+For Google sign-in:
+
+1. Verify `domivaultapp.com` in Google Search Console.
+2. Add `domivaultapp.com` as an authorized domain in Google Cloud.
+3. Set OAuth consent links:
 
 ```text
-http://localhost:3005/auth/update-password
+Home page: https://domivaultapp.com
+Privacy policy: https://domivaultapp.com/privacy
+Terms of service: https://domivaultapp.com/terms
 ```
 
-## Document Uploads and Scanning
-
-Receipt, warranty, vehicle, and report uploads are modeled with `vault_documents` plus the private `receipts` storage bucket.
-
-Suggested implementation path:
-
-1. Upload files to `receipts/{user_id}/{document_type}/{file_name}`.
-2. Store metadata in `vault_documents`.
-3. Link rows to expenses, appliances, maintenance tasks, service events, or vehicles.
-4. Run OCR through the `/api/documents/ocr` route with Tesseract.js for uploaded images and camera scans.
-5. Save extracted OCR text and status on `vault_documents`.
-6. Keep edit/delete controls on the metadata record and delete the matching storage object when a document is removed.
-
-Tesseract OCR supports receipt and warranty photos such as PNG, JPG, WebP, TIFF, GIF, and camera captures. Text-like uploads such as TXT, CSV, JSON, and Markdown are extracted directly. PDF files can still be stored, but image-based PDF OCR would need a PDF-to-image conversion step before Tesseract can read them.
-
-## Google Calendar and Reminders
-
-Basic calendar export is available from maintenance tasks. A full Google Calendar integration should remain a DomiVault Plus feature and should use OAuth with scoped calendar permissions.
-
-Reminder delivery is modeled in the schema with email, SMS, and push channels. Production delivery can be handled by Supabase Edge Functions plus a provider such as Resend, Twilio, or Firebase Cloud Messaging.
-
-## Google Play Deployment
-
-DomiVault is currently a web app. To ship on Google Play, wrap it as a mobile app using Capacitor or a native shell, then publish an Android App Bundle. Use Google’s official publishing, app bundle, and Play Console setup docs as the source of truth:
-
-- Android publishing guide: https://developer.android.com/studio/publish
-- Android App Bundles: https://developer.android.com/guide/app-bundle
-- Play Console app setup: https://support.google.com/googleplay/android-developer/answer/9859152
-
-Recommended mobile checklist:
-
-- Add Capacitor or a native Android wrapper.
-- Configure app name, package id, adaptive icon, splash screen, and deep links.
-- Test auth redirect URLs on Android.
-- Build a signed `.aab`.
-- Complete Play Console app content, privacy, data safety, screenshots, and testing tracks.
-- Release first to internal testing before production.
-
-## GitHub
-
-Repository:
+4. Add JavaScript origins:
 
 ```text
-https://github.com/lvcg/Domivault
+https://domivaultapp.com
+https://www.domivaultapp.com
 ```
 
-Suggested PR title:
+5. Add the Supabase Google callback URI:
 
 ```text
-Rename app to DomiVault and add premium home records vault features
+https://odxobincteposdhqhxvs.supabase.co/auth/v1/callback
 ```
 
-Suggested PR summary:
+6. Add the Google Client ID and Client Secret in Supabase Authentication Providers.
+
+## Production Deployment
+
+### Vercel Deployment
+
+1. Connect the project to Vercel.
+2. Add the production environment variables from `.env.production.example`.
+3. Set the production domain:
 
 ```text
-This update repositions the app as DomiVault, a home and vehicle records command center. It adds premium-feature previews for warranty tracking, document storage, vehicle repair records, export reports, Google Calendar sync, and maintenance history; refreshes branding, favicon, navigation, FAQ, and screenshots; and extends the Supabase schema for plans, vault documents, vehicles, and service records.
+https://domivaultapp.com
 ```
+
+4. Configure Route 53 DNS records for Vercel:
+
+```text
+A      @     76.76.21.21
+CNAME  www   cname.vercel-dns.com
+```
+
+5. Redeploy after environment variable or domain changes.
+
+### Production Hardening Checklist
+
+- Apply `supabase/schema.sql` and all patch SQL files in Supabase.
+- Confirm Supabase Auth Site URL and Redirect URLs match production.
+- Verify Google OAuth domain ownership and callback URLs.
+- Store production secrets in Vercel, Supabase Vault, or provider dashboards.
+- Enable RLS on every user-owned table.
+- Confirm private storage bucket policies prevent cross-user access.
+- Run two-user RLS smoke tests before public launch.
+- Configure RevenueCat webhooks and verify entitlement updates.
+- Configure error monitoring and production logging.
+- Run `npm run typecheck`, `npm test`, `npm run build`, and `npm run test:e2e`.
+- Review dependency audit findings before launch.
+- Keep privacy policy and terms available at public URLs.
+
+## Security Architecture
+
+DomiVault is designed around database-enforced ownership.
+
+- User-owned tables include a `user_id` column.
+- RLS policies compare `user_id` to `auth.uid()`.
+- Authenticated users can only select, insert, update, and delete their own rows.
+- Private document records are stored in `vault_documents` and linked to the authenticated user.
+- Supabase Storage paths should be scoped by user id, such as:
+
+```text
+receipts/{user_id}/{document_type}/{file_name}
+```
+
+- Paid-tier records and exports should be enforced through RLS policies or server routes that read the user's profile billing state.
+
+> UI locks improve user experience, but server-side checks and RLS policies are the source of truth for protecting paid features and private records.
+
+## Monetization Architecture
+
+DomiVault uses a Free vs. DomiVault Plus model. Plus access is represented by billing state on the user's profile and the RevenueCat `premium_access` entitlement.
+
+| Capability | Free | DomiVault Plus |
+| --- | --- | --- |
+| Dashboard command center | Included | Included |
+| Project planner | Included | Included |
+| Expense and utility tracking | Included | Included |
+| Vendor address book | Included | Included |
+| Basic appliance list | Included | Included |
+| Basic maintenance reminders | Included | Included |
+| Receipt and warranty vault | Locked | Included |
+| OCR scan extraction | Locked | Included |
+| Appliance warranty expiration alerts | Locked | Included |
+| Vehicle maintenance records | Locked | Included |
+| Maintenance history | Locked | Included |
+| Google Calendar sync | Locked | Included |
+| CSV/PDF report exports | Locked | Included |
+
+Recommended RevenueCat setup:
+
+1. Create a RevenueCat project named `DomiVault`.
+2. Create an entitlement named `premium_access`.
+3. Create monthly and yearly DomiVault Plus products.
+4. Attach both products to `premium_access`.
+5. Create and publish the current offering.
+6. Add `NEXT_PUBLIC_REVENUECAT_API_KEY` and `NEXT_PUBLIC_REVENUECAT_ENTITLEMENT_ID`.
+7. Configure webhooks:
+
+```text
+https://domivaultapp.com/api/billing/revenuecat
+```
+
+8. Store webhook auth/signing secrets in Vercel.
+
+## Testing
+
+```bash
+npm run typecheck
+npm test
+npm run build
+npm run test:e2e
+```
+
+Current automated coverage includes:
+
+- Dashboard state synchronization after maintenance/appliance updates.
+- Hard delete persistence for maintenance and appliance records.
+- Vehicle dropdown contrast checks.
+- Vendor delete behavior.
+- Free vs. Plus feature gating.
+- Report export download flow.
+- Web push notification registration flow.
+
+## Document Uploads and OCR
+
+Receipt, warranty, vehicle, and report documents are modeled with:
+
+- Private Supabase Storage bucket: `receipts`
+- Metadata table: `vault_documents`
+- OCR API route: `/api/documents/ocr`
+
+Recommended upload flow:
+
+1. Upload the file to a user-scoped storage path.
+2. Save metadata in `vault_documents`.
+3. Link the document to an expense, appliance, vehicle, maintenance task, or service event.
+4. Run OCR for supported image/text files.
+5. Save extracted text and OCR status.
+6. Delete both metadata and storage object when the user removes a document.
+
+## Roadmap
+
+- PDF-to-image OCR pipeline for scanned PDFs.
+- Full Google Calendar two-way sync.
+- Production email/SMS reminder delivery.
+- Expanded analytics for annual home cost forecasting.
+- Admin-quality observability dashboards for production support.
+
+## License
+
+No license has been declared yet. Add a license before distributing DomiVault as an open-source project.
