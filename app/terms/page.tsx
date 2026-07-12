@@ -23,7 +23,7 @@ const termsSections = [
   },
   {
     title: "Free Trial And Renewal Billing",
-    body: "When a 7-day free trial is offered, you get full access to DomiVault Plus free for 7 days. If you do not cancel before the trial ends, you will be charged for the selected plan. On the current paywall, the annual plan is shown as about $6.67 per month and renews as a $79.99 annual charge unless cancelled before the trial ends. The exact price, billing period, taxes, and renewal details shown at checkout control if they differ from these terms.",
+    body: "DomiVault offers a 7-day free trial for eligible subscriptions. If you cancel before the trial ends, you will not be charged. After a paid subscription begins, monthly payments are generally non-refundable, but you may cancel anytime to prevent future charges.",
   },
   {
     title: "Cancellation Policy",
@@ -31,7 +31,7 @@ const termsSections = [
   },
   {
     title: "Refund Policy",
-    body: "Refund requests are reviewed based on the payment provider's rules, applicable law, and the facts of the request. We do not guarantee refunds for unused time, accidental renewals, missed cancellation windows, or partial subscription periods unless required by law or approved by the payment provider. If you believe you were charged in error, contact support promptly with your account email, charge date, and plan details.",
+    body: "Annual and lifetime purchases may be refunded within 14 days of the initial purchase if requested through support. Refunds may also be issued for duplicate charges, billing errors, unauthorized transactions, or verified technical issues that prevent use of the service. To request help, contact support@domivaultapp.com with your account email, charge date, and plan details.",
   },
   {
     title: "Exports And Reports",
@@ -56,6 +56,10 @@ const termsSections = [
   {
     title: "Changes To These Terms",
     body: "We may update these terms as DomiVault evolves. Continued use of the app after updated terms are posted means you accept the updated terms.",
+  },
+  {
+    title: "Contact",
+    body: "For billing, refund, subscription, privacy, or account support, contact support@domivaultapp.com.",
   },
 ];
 

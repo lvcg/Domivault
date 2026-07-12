@@ -26,6 +26,10 @@ const privacySections = [
     body: "We do not sell user data. We share data only when needed to operate DomiVault, comply with law, protect the service, or work with trusted service providers. Those providers include Supabase for secure auth, database, and storage infrastructure, and RevenueCat for subscription access, billing state, and purchase entitlement management.",
   },
   {
+    title: "Billing, Trials, And Refund Support",
+    body: "DomiVault uses trusted billing providers to process subscriptions, manage trial eligibility, verify paid access, and support refunds. DomiVault offers a 7-day free trial for eligible subscriptions. If you cancel before the trial ends, you will not be charged. Refund and billing support requests can be sent to support@domivaultapp.com.",
+  },
+  {
     title: "Your Controls",
     body: "You can edit many profile and record details in the app, download/export available reports, and delete supported records or documents. Some deletion requests may require support if a record is tied to billing, security logs, backups, or legal retention requirements.",
   },
@@ -87,7 +91,7 @@ export default function PrivacyPage() {
 
         <section className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-sm leading-7 text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
           <h2 className="text-lg font-semibold">Contact</h2>
-          <p className="mt-2">Questions about privacy, exports, or deletion requests can be sent to the DomiVault support contact listed in your account or product materials.</p>
+          <p className="mt-2">Questions about privacy, exports, deletion requests, billing, or refunds can be sent to support@domivaultapp.com.</p>
         </section>
       </div>
     </main>

@@ -60,6 +60,16 @@ export default function PlusPage() {
 
         <DomiVaultPaywall />
 
+        <section className="rounded-3xl border border-slate-200/70 bg-white/85 p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">Trial, cancellation, and refunds</p>
+          <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">
+            DomiVault offers a 7-day free trial for eligible subscriptions. If you cancel before the trial ends, you will not be charged. After a paid subscription begins, monthly payments are generally non-refundable, but you may cancel anytime to prevent future charges. Annual and lifetime purchases may be refunded within 14 days of the initial purchase if requested through support. Refunds may also be issued for duplicate charges, billing errors, unauthorized transactions, or verified technical issues that prevent use of the service.
+          </p>
+          <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            Need billing help? Contact support@domivaultapp.com.
+          </p>
+        </section>
+
         <section className="mx-auto grid max-w-5xl gap-3 md:grid-cols-2">
           {plusFeatures.map((feature) => (
             <article key={feature.title} className="flex gap-4 rounded-3xl border border-slate-200/70 bg-white/85 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-white/[0.05]">
