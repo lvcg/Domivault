@@ -15,14 +15,14 @@ export default function HomePage() {
       return;
     }
 
-    router.replace("/dashboard");
+    router.replace("/login");
   }, [router]);
 
   return (
     <main className="grid min-h-screen place-items-center px-4 text-center">
       <div>
         <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300">DomiVault</p>
-        <h1 className="mt-3 text-3xl font-semibold text-slate-950 dark:text-white">Opening your vault dashboard...</h1>
+        <h1 className="mt-3 text-3xl font-semibold text-slate-950 dark:text-white">Opening DomiVault sign in...</h1>
       </div>
     </main>
   );

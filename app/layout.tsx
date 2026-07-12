@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { DomiVaultUserProvider } from "@/components/auth/domivault-user-provider";
@@ -14,15 +15,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nonce = (await headers()).get("x-nonce") || undefined;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script src="/theme-init.js" />
+        <script nonce={nonce} src="/theme-init.js" />
       </head>
       <body>
         <ThemeProvider>
