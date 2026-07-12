@@ -510,8 +510,8 @@ with check ((select auth.uid()) = id);
 create policy "Users manage own projects"
 on public.projects for all
 to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
 
 create policy "Users manage own expenses"
 on public.expenses for all
