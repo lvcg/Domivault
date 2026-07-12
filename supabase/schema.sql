@@ -504,8 +504,8 @@ drop policy if exists "Service role manages Google Calendar tokens" on public.go
 create policy "Users manage own profile"
 on public.profiles for all
 to authenticated
-using (auth.uid() = id)
-with check (auth.uid() = id);
+using ((select auth.uid()) = id)
+with check ((select auth.uid()) = id);
 
 create policy "Users manage own projects"
 on public.projects for all
