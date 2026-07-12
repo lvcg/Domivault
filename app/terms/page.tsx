@@ -6,6 +6,10 @@ const termsSections = [
     body: "DomiVault is a home and vehicle records platform for organizing expenses, maintenance tasks, vendors, appliances, receipts, warranties, service records, reminders, and exports. You agree to use the app lawfully and only for records you have permission to manage.",
   },
   {
+    title: "United States Availability",
+    body: "DomiVault is currently available only in the United States. You may not use the service if you are located outside the United States or if applicable laws prohibit your use of the app.",
+  },
+  {
     title: "Not Professional Advice",
     body: "DomiVault is an organization tool. It does not provide legal, tax, insurance, construction, electrical, plumbing, financial, or vehicle repair advice. You should consult qualified professionals before making decisions that require licensed expertise.",
   },
