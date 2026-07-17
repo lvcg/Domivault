@@ -89,6 +89,32 @@ export default function PrivacyPage() {
           ))}
         </section>
 
+        <section className="rounded-3xl border border-slate-200/70 bg-white/85 p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">Full privacy notice</p>
+              <h2 className="mt-2 text-lg font-semibold text-slate-950 dark:text-white">Detailed privacy policy</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-500 dark:text-slate-400">
+                This full notice includes additional legal disclosures, state privacy rights, request instructions, and contact details.
+              </p>
+            </div>
+            <a
+              href="/privacy-notice.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950"
+            >
+              Open full notice
+            </a>
+          </div>
+          <iframe
+            title="DomiVault full privacy notice"
+            src="/privacy-notice.html"
+            sandbox="allow-popups allow-popups-to-escape-sandbox"
+            className="mt-5 h-[42rem] w-full rounded-2xl border border-slate-200 bg-white dark:border-white/10"
+          />
+        </section>
+
         <section className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-sm leading-7 text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
           <h2 className="text-lg font-semibold">Contact</h2>
           <p className="mt-2">Questions about privacy, exports, deletion requests, billing, or refunds can be sent to support@domivaultapp.com.</p>
