@@ -79,6 +79,60 @@
       "label": "Secure DomiVault sign-in"
     }
   ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Open the DomiVault home command center.",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/logo192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Scanner",
+      "short_name": "Scanner",
+      "description": "Scan receipts, warranties, and home documents.",
+      "url": "/scanner",
+      "icons": [
+        {
+          "src": "/logo192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Expenses",
+      "short_name": "Expenses",
+      "description": "Track home expenses, bills, receipts, and projects.",
+      "url": "/expenses",
+      "icons": [
+        {
+          "src": "/logo192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Maintenance",
+      "short_name": "Maintenance",
+      "description": "Review maintenance tasks, reminders, and service history.",
+      "url": "/maintenance",
+      "icons": [
+        {
+          "src": "/logo192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
   "serviceworker": {
     "src": "/sw.js",
     "scope": "/"
