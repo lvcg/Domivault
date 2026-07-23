@@ -25,5 +25,9 @@
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#0f172a",
-  "background_color": "#f8fafc"
+  "background_color": "#f8fafc",
+  "serviceworker": {
+    "src": "/sw.js",
+    "scope": "/"
+  }
 }

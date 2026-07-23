@@ -20,6 +20,11 @@ export function ServiceWorkerRegistration() {
       }
     };
 
+    if (document.readyState === "complete") {
+      void register();
+      return;
+    }
+
     window.addEventListener("load", register, { once: true });
     return () => window.removeEventListener("load", register);
   }, []);
