@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { DomiVaultUserProvider } from "@/components/auth/domivault-user-provider";
+import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
 
 export const metadata: Metadata = {
   title: "DomiVault | Home and Vehicle Records Vault",
@@ -29,6 +30,7 @@ export default async function RootLayout({
       </head>
       <body>
         <ThemeProvider>
+          <ServiceWorkerRegistration />
           <DomiVaultUserProvider>{children}</DomiVaultUserProvider>
         </ThemeProvider>
       </body>

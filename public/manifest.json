@@ -1,6 +1,8 @@
 {
   "short_name": "DomiVault",
   "name": "DomiVault Home Command Center",
+  "id": "/?source=pwa",
+  "description": "DomiVault helps homeowners organize home records, expenses, receipts, warranties, appliances, maintenance reminders, vendors, vehicle service history, and reports in one secure command center.",
   "icons": [
     {
       "src": "icon.svg",
@@ -18,8 +20,10 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "theme_color": "#0f172a",
   "background_color": "#f8fafc"
 }
