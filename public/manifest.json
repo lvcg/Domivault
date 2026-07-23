@@ -2,7 +2,16 @@
   "short_name": "DomiVault",
   "name": "DomiVault Home Command Center",
   "id": "/?source=pwa",
+  "lang": "en-US",
+  "dir": "ltr",
   "description": "DomiVault helps homeowners organize home records, expenses, receipts, warranties, appliances, maintenance reminders, vendors, vehicle service history, and reports in one secure command center.",
+  "categories": [
+    "productivity",
+    "utilities",
+    "finance"
+  ],
+  "prefer_related_applications": false,
+  "iarc_rating_id": "",
   "icons": [
     {
       "src": "icon.svg",
@@ -26,6 +35,50 @@
   "orientation": "portrait-primary",
   "theme_color": "#0f172a",
   "background_color": "#f8fafc",
+  "screenshots": [
+    {
+      "src": "/screenshots/domivault-dashboard.png",
+      "sizes": "1440x1000",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "DomiVault dashboard command center"
+    },
+    {
+      "src": "/screenshots/domivault-expenses.png",
+      "sizes": "1440x1000",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Expense and bill organizer"
+    },
+    {
+      "src": "/screenshots/domivault-appliances.png",
+      "sizes": "1440x1000",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Appliance and warranty tracker"
+    },
+    {
+      "src": "/screenshots/domivault-vehicles.png",
+      "sizes": "1440x1000",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Vehicle maintenance records"
+    },
+    {
+      "src": "/screenshots/domivault-reports.png",
+      "sizes": "1440x1000",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Reports and exports workspace"
+    },
+    {
+      "src": "/screenshots/domivault-login.png",
+      "sizes": "1440x1000",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Secure DomiVault sign-in"
+    }
+  ],
   "serviceworker": {
     "src": "/sw.js",
     "scope": "/"
