@@ -14,7 +14,13 @@ type DomiVaultUserContextValue = {
 };
 
 const plusEntitlementEvent = "domivault-plus-entitlement-updated";
+const plusEntitlementStorageKey = "domivault-plus-entitlement-active";
 const DomiVaultUserContext = createContext<DomiVaultUserContextValue | null>(null);
+
+function getLocalPlusHint() {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem(plusEntitlementStorageKey) === "true";
+}
 
 export function DomiVaultUserProvider({ children }: { children: React.ReactNode }) {
   const supabase = useMemo(() => createClient(), []);
@@ -24,7 +30,7 @@ export function DomiVaultUserProvider({ children }: { children: React.ReactNode 
 
   const refreshUserState = useCallback(async () => {
     if (!supabase) {
-      setPlanTier("free");
+      setPlanTier(getLocalPlusHint() ? "vault_plus" : "free");
       setUser(null);
       setIsLoading(false);
       return;

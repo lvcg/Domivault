@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pencil, Plus, Target, Trash2, X } from "lucide-react";
 import { projects as seedProjects } from "@/lib/demo-data";
 import { formatCurrency, formatTimestamp } from "@/lib/utils";
@@ -16,6 +16,21 @@ const emptyProject = {
   status: "planning" as Project["status"],
 };
 
+const localProjectsKey = "domivault-local-projects";
+
+function loadLocalProjects() {
+  try {
+    const savedProjects = window.localStorage.getItem(localProjectsKey);
+    return savedProjects ? (JSON.parse(savedProjects) as Project[]) : seedProjects;
+  } catch {
+    return seedProjects;
+  }
+}
+
+function saveLocalProjects(projects: Project[]) {
+  window.localStorage.setItem(localProjectsKey, JSON.stringify(projects));
+}
+
 export function ProjectPlanner() {
   const [projects, setProjects] = useState(seedProjects);
   const [form, setForm] = useState(emptyProject);
@@ -26,6 +41,10 @@ export function ProjectPlanner() {
   const plannedBudget = projects.reduce((sum, project) => sum + project.budget, 0);
   const plannedSpend = projects.reduce((sum, project) => sum + project.spent, 0);
   const remaining = Math.max(0, plannedBudget - plannedSpend);
+
+  useEffect(() => {
+    setProjects(loadLocalProjects());
+  }, []);
 
   const resetForm = () => {
     setForm(emptyProject);
@@ -46,7 +65,9 @@ export function ProjectPlanner() {
   };
 
   const deleteProject = (project: Project) => {
-    setProjects((current) => current.filter((item) => item.id !== project.id));
+    const nextProjects = projects.filter((item) => item.id !== project.id);
+    saveLocalProjects(nextProjects);
+    setProjects(nextProjects);
     setMessage(`${project.name} removed from project planner.`);
   };
 
@@ -63,10 +84,9 @@ export function ProjectPlanner() {
       status: form.status,
     };
 
-    setProjects((current) => {
-      if (!editingId) return [nextProject, ...current];
-      return current.map((project) => (project.id === editingId ? nextProject : project));
-    });
+    const nextProjects = editingId ? projects.map((project) => (project.id === editingId ? nextProject : project)) : [nextProject, ...projects];
+    saveLocalProjects(nextProjects);
+    setProjects(nextProjects);
     setMessage(`${nextProject.name} ${editingId ? "updated" : "added"} in project planner at ${formatTimestamp(new Date().toISOString())}. Form cleared.`);
     resetForm();
   };

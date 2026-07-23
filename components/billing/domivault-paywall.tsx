@@ -13,7 +13,6 @@ const includedFeatures = [
   "Appliance warranty expiration alerts",
   "Vehicle maintenance records",
   "Google Calendar sync",
-  "Emergency vendor/contact list",
   "Renewal reminders",
   "PDF and CSV export reports",
 ];

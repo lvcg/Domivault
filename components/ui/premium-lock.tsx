@@ -1,6 +1,5 @@
 import { LockKeyhole, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { RevenueCatUpgradeButton } from "@/components/billing/revenuecat-upgrade-button";
 
 type PremiumLockProps = {
   title: string;
@@ -24,14 +23,10 @@ export function PremiumLock({ title, description, cta = "Upgrade to Plus", href 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-amber-950/80 dark:text-amber-50/85">{description}</p>
           </div>
         </div>
-        {href === "/plus" ? (
-          <RevenueCatUpgradeButton label={cta} />
-        ) : (
-          <Link href={href} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
-            <Sparkles className="h-4 w-4" />
-            {cta}
-          </Link>
-        )}
+        <Link href={href} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
+          <Sparkles className="h-4 w-4" />
+          {cta}
+        </Link>
       </div>
       {children && <div className="mt-5 opacity-60">{children}</div>}
     </section>

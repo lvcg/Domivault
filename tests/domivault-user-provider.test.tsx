@@ -19,7 +19,7 @@ function Consumer() {
   );
 }
 
-function mockSupabaseClient(planTier: "free" | "vault_plus" = "free") {
+function mockSupabaseClient(planTier: () => "free" | "vault_plus") {
   mockedCreateClient.mockReturnValue({
     auth: {
       getSession: jest.fn().mockResolvedValue({
@@ -45,7 +45,7 @@ function mockSupabaseClient(planTier: "free" | "vault_plus" = "free") {
         eq: jest.fn(() => ({
           maybeSingle: jest.fn().mockResolvedValue({
             data: {
-              plan_tier: planTier,
+              plan_tier: planTier(),
             },
           }),
         })),
@@ -61,7 +61,8 @@ describe("DomiVaultUserProvider entitlement state", () => {
   });
 
   it("reactively unlocks Plus state when a successful purchase event fires", async () => {
-    mockSupabaseClient("free");
+    let syncedPlanTier: "free" | "vault_plus" = "free";
+    mockSupabaseClient(() => syncedPlanTier);
 
     render(
       <DomiVaultUserProvider>
@@ -74,7 +75,8 @@ describe("DomiVaultUserProvider entitlement state", () => {
       expect(screen.getByTestId("plus-state")).toHaveTextContent("free");
     });
 
-    act(() => {
+    syncedPlanTier = "vault_plus";
+    await act(async () => {
       window.dispatchEvent(new CustomEvent("domivault-plus-entitlement-updated", {
         detail: {
           isPremium: true,
@@ -82,7 +84,9 @@ describe("DomiVaultUserProvider entitlement state", () => {
       }));
     });
 
-    expect(screen.getByTestId("plan-tier")).toHaveTextContent("vault_plus");
-    expect(screen.getByTestId("plus-state")).toHaveTextContent("plus");
+    await waitFor(() => {
+      expect(screen.getByTestId("plan-tier")).toHaveTextContent("vault_plus");
+      expect(screen.getByTestId("plus-state")).toHaveTextContent("plus");
+    });
   });
 });

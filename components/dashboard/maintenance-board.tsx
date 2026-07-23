@@ -267,13 +267,11 @@ export function MaintenanceBoard() {
       }
     }
 
-    setTasks((current) => {
-      const nextTasks = current.filter((item) => item.id !== task.id);
-      if (!supabase || !userId || task.id.startsWith("task-")) {
-        window.localStorage.setItem(localMaintenanceTasksKey, JSON.stringify(nextTasks));
-      }
-      return nextTasks;
-    });
+    const nextTasks = tasks.filter((item) => item.id !== task.id);
+    if (!supabase || !userId || task.id.startsWith("task-")) {
+      window.localStorage.setItem(localMaintenanceTasksKey, JSON.stringify(nextTasks));
+    }
+    setTasks(nextTasks);
     setNotice(`${task.title} deleted from maintenance schedule.`);
   };
 

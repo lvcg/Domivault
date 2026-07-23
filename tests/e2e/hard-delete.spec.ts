@@ -27,5 +27,15 @@ test.describe("Persistent hard delete behavior", () => {
     await page.reload();
     await expect(cardByHeading(page, "Water Heater")).toHaveCount(0);
   });
-});
 
+  test("keeps a deleted project plan removed after reload", async ({ page }) => {
+    await page.goto("/projects");
+    await expect(cardByHeading(page, "New Roof")).toBeVisible();
+
+    await cardByHeading(page, "New Roof").getByRole("button", { name: "Delete" }).click();
+    await expect(cardByHeading(page, "New Roof")).toHaveCount(0);
+
+    await page.reload();
+    await expect(cardByHeading(page, "New Roof")).toHaveCount(0);
+  });
+});

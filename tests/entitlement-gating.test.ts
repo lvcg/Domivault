@@ -11,6 +11,7 @@ describe("entitlement gating utilities", () => {
     expect(canAccessFeature("dashboard_overview", false)).toBe(true);
     expect(canAccessFeature("expense_tracking", false)).toBe(true);
     expect(canAccessFeature("maintenance_checklists", false)).toBe(true);
+    expect(canAccessFeature("vendor_directory", false)).toBe(true);
   });
 
   it("blocks Plus-only features for free users", () => {

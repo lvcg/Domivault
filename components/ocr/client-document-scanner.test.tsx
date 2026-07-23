@@ -120,11 +120,27 @@ describe("ClientDocumentScanner", () => {
     const file = new File(["mock image"], "bad.jpeg", { type: "image/jpeg" });
     await user.upload(screen.getByLabelText("Upload document image"), file);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("We could not read text from this document.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("We could not automatically read text from this document.");
+    expect(screen.getByLabelText("Review or enter document text")).toBeInTheDocument();
     expect(screen.getByText("Scan failed")).toBeInTheDocument();
 
     await waitFor(() => {
       expect(mockTerminate).toHaveBeenCalled();
     });
+  });
+
+  it("keeps manual entry available when OCR completes without readable text", async () => {
+    const user = userEvent.setup();
+    installCanvasMocks();
+    const recognition = deferredRecognize("     ");
+    render(<ClientDocumentScanner />);
+
+    const file = new File(["blank image"], "blank.png", { type: "image/png" });
+    await user.upload(screen.getByLabelText("Upload document image"), file);
+
+    recognition.resolve();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("We could not automatically read text from this scan.");
+    expect(screen.getByLabelText("Review or enter document text")).toBeInTheDocument();
   });
 });

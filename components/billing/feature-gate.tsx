@@ -11,13 +11,13 @@ const featureLabels: Record<FeatureId, string> = {
   appliance_warranty_alerts: "Appliance warranty alerts",
   dashboard_overview: "Dashboard overview",
   document_vault: "Receipt and warranty vault",
-  emergency_vendor_directory: "Emergency vendor list",
   expense_tracking: "Expense tracking",
   google_calendar_sync: "Google Calendar sync",
   maintenance_checklists: "Maintenance checklists",
   ocr_scan_extraction: "OCR scan extraction",
   project_planner: "Project planner",
   renewal_reminders: "Renewal reminders",
+  vendor_directory: "Vendor directory",
   vehicle_maintenance_records: "Vehicle maintenance records",
 };
 

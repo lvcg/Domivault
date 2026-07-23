@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BellRing, CalendarCheck, Car, FileScan, FileText, LifeBuoy, Refrigerator, ShieldCheck } from "lucide-react";
+import { BellRing, CalendarCheck, Car, FileScan, FileText, Refrigerator, ShieldCheck } from "lucide-react";
 import { DomiVaultPaywall } from "@/components/billing/domivault-paywall";
 
 const plusFeatures = [
@@ -27,11 +27,6 @@ const plusFeatures = [
     title: "OCR scan extraction",
     description: "Scan receipts and warranty images, extract text, and save the searchable record to the vault.",
     icon: FileScan,
-  },
-  {
-    title: "Emergency vendor/contact list",
-    description: "Keep preferred plumbers, electricians, HVAC techs, contractors, and emergency contacts ready.",
-    icon: LifeBuoy,
   },
   {
     title: "Renewal reminders",

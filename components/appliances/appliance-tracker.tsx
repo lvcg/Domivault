@@ -268,13 +268,11 @@ export function ApplianceTracker() {
       }
     }
 
-    setAppliances((current) => {
-      const nextAppliances = current.filter((item) => item.id !== appliance.id);
-      if (!supabase || !userId || appliance.id.startsWith("appliance-")) {
-        window.localStorage.setItem(localAppliancesKey, JSON.stringify(nextAppliances));
-      }
-      return nextAppliances;
-    });
+    const nextAppliances = appliances.filter((item) => item.id !== appliance.id);
+    if (!supabase || !userId || appliance.id.startsWith("appliance-")) {
+      window.localStorage.setItem(localAppliancesKey, JSON.stringify(nextAppliances));
+    }
+    setAppliances(nextAppliances);
     setNotice(`${appliance.name} deleted.`);
   };
 

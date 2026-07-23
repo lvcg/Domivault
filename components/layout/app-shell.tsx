@@ -16,7 +16,7 @@ const navigation = [
   { label: "Maintenance", href: "/maintenance", icon: CalendarCheck },
   { label: "Appliances", href: "/appliances", icon: Refrigerator },
   { label: "Vehicles", href: "/vehicles", icon: Car, plus: true },
-  { label: "Vendors", href: "/vendors", icon: UsersRound, plus: true },
+  { label: "Vendors", href: "/vendors", icon: UsersRound },
   { label: "Scanner", href: "/scanner", icon: ScanLine, plus: true },
   { label: "Reports", href: "/reports", icon: FileText, plus: true },
   { label: "DomiVault Plus", href: "/plus", icon: Sparkles },

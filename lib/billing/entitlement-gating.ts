@@ -9,7 +9,6 @@ export const premiumFeatureIds = [
   "appliance_warranty_alerts",
   "vehicle_maintenance_records",
   "google_calendar_sync",
-  "emergency_vendor_directory",
   "renewal_reminders",
 ] as const;
 
@@ -18,6 +17,7 @@ export const freeFeatureIds = [
   "expense_tracking",
   "maintenance_checklists",
   "appliance_inventory",
+  "vendor_directory",
   "project_planner",
 ] as const;
 

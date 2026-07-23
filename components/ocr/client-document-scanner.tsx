@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Camera, FileImage, Loader2, RotateCcw, ScanLine, StopCircle } from "lucide-react";
+import { getOcrFileLimitError, isOcrImageFile, isOcrPdfFile } from "@/lib/documents/file-limits";
 import { extractBrowserOcr } from "@/lib/ocr/browser-tesseract";
 import { extractOcrFields, sanitizeOcrText, type OcrExtractedFields } from "@/lib/ocr/text-cleanup";
 
@@ -67,9 +68,14 @@ export function ClientDocumentScanner() {
       setText(result.text);
       setExtracted(result.extracted);
       setProgress(100);
+      if (!result.text.trim()) {
+        setError("We could not automatically read text from this scan. Try retaking it with the document flat, well lit, and in focus, or type the details below.");
+        setStatus("isError");
+        return;
+      }
       setStatus("isSuccess");
     } catch {
-      setError("We could not read text from this document. Try a sharper image with better lighting.");
+      setError("We could not automatically read text from this document. Try a clearer image or enter the details below.");
       setStatus("isError");
     }
   };
@@ -77,6 +83,15 @@ export function ClientDocumentScanner() {
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    const fileError = getOcrFileLimitError(file);
+    if (fileError || (!isOcrImageFile(file) && !isOcrPdfFile(file))) {
+      setError(fileError || "Upload a receipt, warranty, or service record as an image or PDF.");
+      setStatus("isError");
+      event.target.value = "";
+      return;
+    }
+
     await processImage(file);
     event.target.value = "";
   };
@@ -223,7 +238,7 @@ export function ClientDocumentScanner() {
         </p>
       )}
 
-      {(status === "isSuccess" || text) && (
+      {(status === "isSuccess" || status === "isError" || text) && (
         <div className="mt-5 grid gap-4">
           {Object.keys(extracted).length > 0 && (
             <div className="grid gap-2 rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm dark:border-emerald-400/20 dark:bg-emerald-400/10">
@@ -239,7 +254,7 @@ export function ClientDocumentScanner() {
             </div>
           )}
           <label className="grid gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
-            Cleaned extracted text
+            {status === "isError" ? "Review or enter document text" : "Cleaned extracted text"}
             <textarea
               className="min-h-48 rounded-3xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-800 outline-none transition-all duration-200 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:focus:ring-emerald-400/10"
               onChange={(event) => {
