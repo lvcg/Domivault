@@ -3,19 +3,20 @@
 import { createWorker } from "tesseract.js";
 import { preprocessImageForOcr } from "@/lib/ocr/browser-image-preprocess";
 import { isPdfFile, renderPdfToCanvases } from "@/lib/ocr/browser-pdf-render";
-import { extractOcrFields, sanitizeOcrText, type OcrExtractedFields } from "@/lib/ocr/text-cleanup";
+import { analyzeOcrDocument, extractOcrFields, sanitizeOcrText, type OcrDocumentAnalysis, type OcrExtractedFields } from "@/lib/ocr/text-cleanup";
 
 type LegacyWorkerHooks = {
   loadLanguage?: (language: string) => Promise<unknown>;
   initialize?: (language: string) => Promise<unknown>;
   setParameters?: (parameters: Record<string, string>) => Promise<unknown>;
-  recognize: (image: File | Blob | HTMLCanvasElement) => Promise<{ data: { text: string } }>;
+  recognize: (image: File | Blob | HTMLCanvasElement) => Promise<{ data: { confidence?: number; text: string } }>;
   terminate?: () => Promise<unknown>;
 };
 
 export type BrowserOcrResult = {
   text: string;
   extracted: OcrExtractedFields;
+  analysis: OcrDocumentAnalysis;
   pageCount: number;
 };
 
@@ -25,7 +26,12 @@ export type BrowserOcrProgress = {
   pageCount: number;
 };
 
-async function createOcrWorker(onProgress?: (progress: BrowserOcrProgress) => void, pageCount = 1, pageNumber = 1) {
+async function createOcrWorker(
+  onProgress?: (progress: BrowserOcrProgress) => void,
+  pageCount = 1,
+  pageNumber = 1,
+  pageSegmentationMode = "4",
+) {
   const worker = await createWorker("eng", undefined, {
     logger: (message) => {
       if (typeof message.progress === "number") {
@@ -36,23 +42,36 @@ async function createOcrWorker(onProgress?: (progress: BrowserOcrProgress) => vo
     },
   }) as unknown as LegacyWorkerHooks;
 
-  if (typeof worker.loadLanguage === "function") {
-    await worker.loadLanguage("eng");
-  }
-
-  if (typeof worker.initialize === "function") {
-    await worker.initialize("eng");
-  }
+  if (typeof worker.loadLanguage === "function") await worker.loadLanguage("eng");
+  if (typeof worker.initialize === "function") await worker.initialize("eng");
 
   if (typeof worker.setParameters === "function") {
     await worker.setParameters({
       preserve_interword_spaces: "1",
-      tessedit_pageseg_mode: "11",
+      tessedit_ocr_engine_mode: "1",
+      tessedit_pageseg_mode: pageSegmentationMode,
       tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$.,:/#@&%()+- ",
     });
   }
 
   return worker;
+}
+
+async function recognizeWithMode(
+  image: File | Blob | HTMLCanvasElement,
+  onProgress: ((progress: BrowserOcrProgress) => void) | undefined,
+  pageCount: number,
+  pageNumber: number,
+  pageSegmentationMode: "4" | "11",
+) {
+  const worker = await createOcrWorker(onProgress, pageCount, pageNumber, pageSegmentationMode);
+
+  try {
+    const result = await worker.recognize(image);
+    return sanitizeOcrText(result.data.text);
+  } finally {
+    await worker.terminate?.();
+  }
 }
 
 async function recognizeSources(
@@ -64,17 +83,16 @@ async function recognizeSources(
 
   for (let index = 0; index < sources.length; index += 1) {
     const pageNumber = index + 1;
-    let worker: LegacyWorkerHooks | null = null;
+    const preprocessed = await preprocessImageForOcr(sources[index]);
+    const psm4Text = await recognizeWithMode(preprocessed.image, onProgress, pageCount, pageNumber, "4");
+    let cleanText = psm4Text;
 
-    try {
-      worker = await createOcrWorker(onProgress, pageCount, pageNumber);
-      const preprocessed = await preprocessImageForOcr(sources[index]);
-      const result = await worker.recognize(preprocessed.image);
-      const cleanText = sanitizeOcrText(result.data.text);
-      if (cleanText) pages.push(cleanText);
-    } finally {
-      await worker?.terminate?.();
+    if (cleanText.length < 16) {
+      const sparseText = await recognizeWithMode(preprocessed.image, onProgress, pageCount, pageNumber, "11");
+      if (sparseText.length > cleanText.length) cleanText = sparseText;
     }
+
+    if (cleanText) pages.push(cleanText);
   }
 
   const text = sanitizeOcrText(pages.join("\n\n"));
@@ -83,6 +101,7 @@ async function recognizeSources(
   return {
     text,
     extracted: extractOcrFields(text),
+    analysis: analyzeOcrDocument(text),
     pageCount,
   };
 }
@@ -93,21 +112,13 @@ export async function extractBrowserOcr(
 ): Promise<BrowserOcrResult> {
   if (source instanceof File && isPdfFile(source)) {
     const pages = await renderPdfToCanvases(source);
-
-    if (!pages.length) {
-      return { text: "", extracted: {}, pageCount: 0 };
-    }
-
+    if (!pages.length) return { text: "", extracted: {}, analysis: analyzeOcrDocument(""), pageCount: 0 };
     return recognizeSources(pages.map((page) => page.canvas), onProgress);
   }
 
   if (source instanceof Blob && isPdfFile(source)) {
     const pages = await renderPdfToCanvases(source);
-
-    if (!pages.length) {
-      return { text: "", extracted: {}, pageCount: 0 };
-    }
-
+    if (!pages.length) return { text: "", extracted: {}, analysis: analyzeOcrDocument(""), pageCount: 0 };
     return recognizeSources(pages.map((page) => page.canvas), onProgress);
   }
 

@@ -190,7 +190,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <PlanStatusBadge isLoading={isPlanLoading} isPlusUser={isPlusUser} />
               </div>
               <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Stay ahead of your home's costs, upkeep, and next priorities.
+                Stay ahead of your home&apos;s costs, upkeep, and next priorities.
                 <span className="mt-1 block font-medium text-slate-700 dark:text-slate-300">Last saved: {formatTimestamp(lastSavedAt)}</span>
               </p>
             </div>

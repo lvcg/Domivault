@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
-import { PSM, createWorker } from "tesseract.js";
+import { createWorker, PSM } from "tesseract.js";
 import { requireVaultPlus } from "@/lib/auth/server-plan";
 import { getOcrFileLimitError, isOcrImageFile, isOcrTextFile } from "@/lib/documents/file-limits";
-import { extractOcrFields, sanitizeOcrText } from "@/lib/ocr/text-cleanup";
+import { analyzeOcrDocument, extractOcrFields, sanitizeOcrText, type OcrDocumentAnalysis } from "@/lib/ocr/text-cleanup";
 
 type OcrPayload = {
   text: string;
   status: "processed" | "unavailable" | "failed";
+  analysis?: OcrDocumentAnalysis;
   extracted?: Record<string, string | number | boolean>;
   message: string;
 };
@@ -25,7 +26,8 @@ async function extractWithTesseract(file: File): Promise<OcrPayload> {
   try {
     await worker.setParameters?.({
       preserve_interword_spaces: "1",
-      tessedit_pageseg_mode: PSM.SPARSE_TEXT,
+      tessedit_ocr_engine_mode: "1",
+      tessedit_pageseg_mode: PSM.SINGLE_COLUMN,
       tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$.,:/#@&%()+- ",
     });
 
@@ -36,6 +38,7 @@ async function extractWithTesseract(file: File): Promise<OcrPayload> {
     return {
       text,
       status: text ? "processed" : "unavailable",
+      analysis: analyzeOcrDocument(text),
       extracted: text ? extractOcrFields(text) : undefined,
       message: text ? "Tesseract OCR text extracted and cleaned." : "Tesseract OCR completed but no text was detected.",
     };
@@ -69,6 +72,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         text,
         status: text ? "processed" : "unavailable",
+        analysis: analyzeOcrDocument(text),
         extracted: text ? extractOcrFields(text) : undefined,
         message: text ? "Text extracted from document." : "The document did not contain readable text.",
       } satisfies OcrPayload);

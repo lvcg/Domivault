@@ -74,7 +74,7 @@ describe("ClientDocumentScanner", () => {
     expect(createWorker).toHaveBeenCalledWith("eng", undefined, expect.objectContaining({ logger: expect.any(Function) }));
     expect(mockLoadLanguage).toHaveBeenCalledWith("eng");
     expect(mockInitialize).toHaveBeenCalledWith("eng");
-    expect(mockSetParameters).toHaveBeenCalledWith(expect.objectContaining({ tessedit_pageseg_mode: "11" }));
+    expect(mockSetParameters).toHaveBeenCalledWith(expect.objectContaining({ tessedit_pageseg_mode: "4" }));
     expect(mockTerminate).toHaveBeenCalled();
   });
 
@@ -132,13 +132,13 @@ describe("ClientDocumentScanner", () => {
   it("keeps manual entry available when OCR completes without readable text", async () => {
     const user = userEvent.setup();
     installCanvasMocks();
-    const recognition = deferredRecognize("     ");
+    mockRecognize
+      .mockResolvedValueOnce({ data: { text: "     " } })
+      .mockResolvedValueOnce({ data: { text: "     " } });
     render(<ClientDocumentScanner />);
 
     const file = new File(["blank image"], "blank.png", { type: "image/png" });
     await user.upload(screen.getByLabelText("Upload document image"), file);
-
-    recognition.resolve();
 
     expect(await screen.findByRole("alert")).toHaveTextContent("We could not automatically read text from this scan.");
     expect(screen.getByLabelText("Review or enter document text")).toBeInTheDocument();

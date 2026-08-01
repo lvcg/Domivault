@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Camera, FileImage, Loader2, RotateCcw, ScanLine, StopCircle } from "lucide-react";
 import { getOcrFileLimitError, isOcrImageFile, isOcrPdfFile } from "@/lib/documents/file-limits";
 import { extractBrowserOcr } from "@/lib/ocr/browser-tesseract";
-import { extractOcrFields, sanitizeOcrText, type OcrExtractedFields } from "@/lib/ocr/text-cleanup";
+import { analyzeOcrDocument, extractOcrFields, sanitizeOcrText, type OcrDocumentAnalysis, type OcrExtractedFields } from "@/lib/ocr/text-cleanup";
 
 type ScannerStatus = "isIdle" | "isCapturing" | "isProcessing" | "isSuccess" | "isError";
 
@@ -24,6 +24,7 @@ export function ClientDocumentScanner() {
   const [progress, setProgress] = useState(0);
   const [text, setText] = useState("");
   const [extracted, setExtracted] = useState<OcrExtractedFields>({});
+  const [analysis, setAnalysis] = useState<OcrDocumentAnalysis | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -55,6 +56,7 @@ export function ClientDocumentScanner() {
     setProgress(0);
     setText("");
     setExtracted({});
+    setAnalysis(null);
     setError("");
   };
 
@@ -67,6 +69,7 @@ export function ClientDocumentScanner() {
       const result = await extractBrowserOcr(image, ({ progress }) => setProgress(progress));
       setText(result.text);
       setExtracted(result.extracted);
+      setAnalysis(result.analysis);
       setProgress(100);
       if (!result.text.trim()) {
         setError("We could not automatically read text from this scan. Try retaking it with the document flat, well lit, and in focus, or type the details below.");
@@ -261,10 +264,19 @@ export function ClientDocumentScanner() {
                 const cleanText = sanitizeOcrText(event.target.value);
                 setText(event.target.value);
                 setExtracted(extractOcrFields(cleanText));
+                setAnalysis(analyzeOcrDocument(cleanText));
               }}
               value={text}
             />
           </label>
+          {analysis && (
+            <div className="grid gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Structured JSON
+              <pre className="max-h-80 overflow-auto rounded-3xl border border-slate-200 bg-slate-950 p-4 text-xs leading-6 text-emerald-100 dark:border-white/10">
+                {JSON.stringify(analysis, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
       )}
 
