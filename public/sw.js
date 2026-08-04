@@ -1,11 +1,10 @@
-const CACHE_VERSION = "domivault-v1";
+const CACHE_VERSION = "domivault-v2";
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
 const APP_SHELL_ASSETS = [
   "/manifest.json",
   "/offline.html",
-  "/icon.svg",
   "/logo192.png",
   "/logo512.png",
   "/theme-init.js",
@@ -97,8 +96,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
-      badge: "/icon.svg",
-      icon: "/icon.svg",
+      badge: "/logo192.png",
+      icon: "/logo512.png",
       data: {
         url: payload.url || "/maintenance",
       },

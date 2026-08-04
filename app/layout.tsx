@@ -10,9 +10,12 @@ export const metadata: Metadata = {
   description: "Secure home, vehicle, receipt, warranty, maintenance, and report vault.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    icon: [
+      { url: "/logo192.png", sizes: "192x192", type: "image/png" },
+      { url: "/logo512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/logo192.png",
+    apple: "/logo192.png",
   },
 };
 

@@ -32,6 +32,12 @@ const emptyExpense = {
   documentUrl: "",
 };
 
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function getPersistableProjectId(projectId: string) {
+  return uuidPattern.test(projectId) ? projectId : null;
+}
+
 type SupabaseExpenseRow = {
   id: string;
   project_id: string | null;
@@ -221,7 +227,20 @@ export function ExpenseTracker() {
   const addExpense = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const amount = Number(form.amount);
-    if (!form.vendor.trim() || !form.description.trim() || !Number.isFinite(amount)) return;
+    if (!form.vendor.trim()) {
+      setSyncMessage("Add a vendor name before saving this expense.");
+      return;
+    }
+
+    if (!form.description.trim()) {
+      setSyncMessage("Add a short description before saving this expense.");
+      return;
+    }
+
+    if (!Number.isFinite(amount) || amount < 0) {
+      setSyncMessage("Enter a valid expense amount before saving.");
+      return;
+    }
 
     const draftExpense: Expense = {
       id: editingExpenseId || crypto.randomUUID(),
@@ -237,23 +256,33 @@ export function ExpenseTracker() {
 
     if (supabase && userId) {
       setIsSaving(true);
-      const payload = {
+      const basePayload = {
         user_id: userId,
         vendor: draftExpense.vendor,
         description: draftExpense.description,
         amount: draftExpense.amount,
         category: draftExpense.category,
-        project_id: draftExpense.projectId || null,
+        project_id: getPersistableProjectId(draftExpense.projectId || ""),
         expense_date: draftExpense.date,
         tax_deductible: draftExpense.taxDeductible,
         document_url: draftExpense.documentUrl || null,
+      };
+      const payload = {
+        ...basePayload,
         document_name: draftExpense.documentUrl ? draftExpense.documentUrl.split("/").pop() : null,
         metadata: { source: "homey-ui" },
       };
-      const request = editingExpenseId && !editingExpenseId.startsWith("exp-")
-        ? supabase.from("expenses").update(payload).eq("id", editingExpenseId).select("id,project_id,category,vendor,description,amount,expense_date,tax_deductible,document_url").single()
-        : supabase.from("expenses").insert(payload).select("id,project_id,category,vendor,description,amount,expense_date,tax_deductible,document_url").single();
-      const { data, error } = await request;
+
+      const saveRequest = (nextPayload: typeof basePayload | typeof payload) => editingExpenseId && !editingExpenseId.startsWith("exp-")
+        ? supabase.from("expenses").update(nextPayload).eq("id", editingExpenseId).select("id,project_id,category,vendor,description,amount,expense_date,tax_deductible,document_url").single()
+        : supabase.from("expenses").insert(nextPayload).select("id,project_id,category,vendor,description,amount,expense_date,tax_deductible,document_url").single();
+
+      let { data, error } = await saveRequest(payload);
+      if (error && /document_name|metadata|schema cache/i.test(error.message)) {
+        const fallback = await saveRequest(basePayload);
+        data = fallback.data;
+        error = fallback.error;
+      }
       setIsSaving(false);
 
       if (error) {
