@@ -1,7 +1,7 @@
 {
   "short_name": "DomiVault",
   "name": "DomiVault Home Command Center",
-  "id": "/",
+  "id": "https://www.domivaultapp.com/",
   "lang": "en-US",
   "dir": "ltr",
   "description": "DomiVault helps homeowners organize home records, expenses, receipts, warranties, appliances, maintenance reminders, vendors, vehicle service history, and reports in one secure command center.",
@@ -13,13 +13,13 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "logo192.png",
+      "src": "/logo192.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "logo512.png",
+      "src": "/logo512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
