@@ -6,8 +6,8 @@ import { DomiVaultUserProvider } from "@/components/auth/domivault-user-provider
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
 
 export const metadata: Metadata = {
-  title: "DomiVault | Home and Vehicle Records Vault",
-  description: "Secure home, vehicle, receipt, warranty, maintenance, and report vault.",
+  title: "Domivault | Home Command Center and Records Vault",
+  description: "Domivault helps homeowners organize expenses, maintenance, appliances, warranties, vendors, vehicle records, receipts, and documents.",
   manifest: "/manifest.json",
   icons: {
     icon: [

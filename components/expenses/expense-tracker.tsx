@@ -328,7 +328,7 @@ export function ExpenseTracker() {
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950"
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950 sm:w-auto"
             type="button"
           >
             <Plus className="h-4 w-4" />
@@ -341,20 +341,20 @@ export function ExpenseTracker() {
         <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
           {syncMessage}
         </div>
-        <div className="grid gap-3 lg:grid-cols-[1fr_180px_220px_auto]">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_180px_220px_auto]">
           <label className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search vendor or description"
-              className="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 dark:border-white/10 dark:bg-white/5"
+              className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-3 text-base outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 dark:border-white/10 dark:bg-white/5 sm:text-sm"
             />
           </label>
           <select
             value={category}
             onChange={(event) => setCategory(event.target.value as (typeof categories)[number])}
-            className="h-11 rounded-2xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 dark:border-white/10 dark:bg-white/5"
+            className="min-h-12 rounded-2xl border border-slate-200 bg-white px-3 text-base outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 dark:border-white/10 dark:bg-white/5 sm:text-sm"
           >
             {categories.map((item) => (
               <option key={item} value={item}>{item === "all" ? "All categories" : item}</option>
@@ -363,7 +363,7 @@ export function ExpenseTracker() {
           <select
             value={projectId}
             onChange={(event) => setProjectId(event.target.value)}
-            className="h-11 rounded-2xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 dark:border-white/10 dark:bg-white/5"
+            className="min-h-12 rounded-2xl border border-slate-200 bg-white px-3 text-base outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 dark:border-white/10 dark:bg-white/5 sm:text-sm"
           >
             <option value="all">All projects and bills</option>
             {projectOptions.map((project) => (
@@ -433,13 +433,13 @@ export function ExpenseTracker() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4 backdrop-blur-sm">
-          <form onSubmit={addExpense} className="w-full max-w-2xl rounded-[2rem] border border-white/60 bg-white p-6 shadow-glass dark:border-white/10 dark:bg-slate-950">
+          <form onSubmit={addExpense} className="mobile-modal-panel w-full max-w-2xl rounded-[2rem] border border-white/60 bg-white p-4 shadow-glass dark:border-white/10 dark:bg-slate-950 sm:p-6">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600">{editingExpenseId ? "Edit record" : "New record"}</p>
-                <h3 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{editingExpenseId ? "Correct expense or utility bill" : "Add expense or utility bill"}</h3>
+                <h3 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white sm:text-2xl">{editingExpenseId ? "Correct expense or utility bill" : "Add expense or utility bill"}</h3>
               </div>
-              <button onClick={resetForm} type="button" className="rounded-2xl border border-slate-200 p-2 text-slate-500 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:hover:bg-white/10">
+              <button onClick={resetForm} type="button" className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-slate-200 text-slate-500 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:hover:bg-white/10">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -517,10 +517,10 @@ export function ExpenseTracker() {
             </div>
 
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={resetForm} type="button" className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
+              <button onClick={resetForm} type="button" className="min-h-12 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
                 Cancel
               </button>
-              <button disabled={isSaving} type="submit" className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950">
+              <button disabled={isSaving} type="submit" className="min-h-12 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950">
                 {isSaving ? "Saving..." : editingExpenseId ? "Update record" : "Save record"}
               </button>
             </div>

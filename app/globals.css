@@ -4,18 +4,43 @@
 
 :root {
   color-scheme: light;
+  --page-x-padding: clamp(1rem, 3vw, 2rem);
 }
 
 html {
   scroll-behavior: smooth;
+  min-width: 320px;
+  overflow-x: hidden;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   background:
     radial-gradient(circle at top left, rgba(16, 185, 129, 0.12), transparent 32rem),
     linear-gradient(135deg, #f8fafc 0%, #eef2f7 48%, #e7ecef 100%);
   color: #0f172a;
+}
+
+/* Mobile-first safety rails for PWA/TWA shells: prevent sideways drift and respect device cutouts. */
+body,
+button,
+input,
+select,
+textarea {
+  font-feature-settings: "kern";
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
 }
 
 ::selection {
@@ -31,7 +56,7 @@ body {
 
 @layer components {
   .input {
-    @apply w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 dark:border-white/10 dark:bg-white/5 dark:text-white;
+    @apply min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-950 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10 dark:border-white/10 dark:bg-white/5 dark:text-white sm:text-sm;
   }
 
   select.input option {
@@ -40,5 +65,72 @@ body {
 
   .dark select.input option {
     @apply bg-slate-950 text-white;
+  }
+
+  .touch-target {
+    @apply min-h-12 min-w-12;
+  }
+
+  .mobile-modal-panel {
+    /* Keeps long forms usable on short phones and foldables without clipping action buttons. */
+    max-height: min(calc(100dvh - 2rem), 920px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .responsive-page-title {
+    font-size: clamp(1.75rem, 6vw, 2.5rem);
+    line-height: 1.05;
+  }
+
+  .safe-app-shell {
+    /* Uses dynamic viewport units and safe-area env vars for Android/iOS browser chrome and notches. */
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-left: max(var(--page-x-padding), env(safe-area-inset-left));
+    padding-right: max(var(--page-x-padding), env(safe-area-inset-right));
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(6rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (hover: none) {
+  /* Touch devices can keep hover styles visually stuck, so motion-heavy hover transforms are neutralized. */
+  button:hover,
+  a:hover {
+    transform: none !important;
+  }
+}
+
+@media (pointer: coarse) {
+  button,
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  label[for] {
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 640px) {
+  [class*="rounded-[2rem]"] {
+    border-radius: 1.25rem;
+  }
+
+  .fixed.inset-0 {
+    align-items: start;
+    overflow-y: auto;
+    padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  }
+
+  .fixed.inset-0 > form,
+  .fixed.inset-0 > section {
+    width: 100%;
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+  }
+
+  table {
+    font-size: 0.875rem;
   }
 }
