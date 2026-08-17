@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.domivaultapp.mobile",
+      "sha256_cert_fingerprints": [
+        "D6:1C:B6:62:2E:D6:04:2F:E4:FD:D7:D3:9E:DF:4D:63:4A:08:B5:E4:17:BE:33:6C:8A:28:90:C0:3E:D5:49:DA"
+      ]
+    }
+  }
+]
