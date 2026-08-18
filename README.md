@@ -8,9 +8,9 @@ It centralizes the operational side of home ownership: improvement expenses, uti
 
 | Resource | URL |
 | --- | --- |
-| Live app | https://domivaultapp.com |
-| Privacy policy | https://domivaultapp.com/privacy |
-| Terms of service | https://domivaultapp.com/terms |
+| Live app | https://www.domivaultapp.com |
+| Privacy policy | https://www.domivaultapp.com/privacy |
+| Terms of service | https://www.domivaultapp.com/terms |
 
 > DomiVault helps homeowners keep receipts, warranties, maintenance records, and repair history organized before they need them.
 
@@ -138,10 +138,22 @@ supabase/
   schema.sql
   push-notifications.sql
   rls-smoke-tests.sql
+docs/
+  production-readiness.md
+  marketing-plan.md
 tests/
   e2e/
 types/
 ```
+
+## Product And Launch Docs
+
+The repository includes Confluence-ready planning documents:
+
+| Document | Purpose |
+| --- | --- |
+| [`docs/production-readiness.md`](docs/production-readiness.md) | Production, Supabase, security, PWA, Google Play, Android TWA, and QA release checklist. |
+| [`docs/marketing-plan.md`](docs/marketing-plan.md) | Zero-user launch plan with Reddit, Facebook, Google, partnership, content, and metrics strategy. |
 
 ## Local Development Setup
 
@@ -259,7 +271,7 @@ In Supabase Auth settings:
 4. Set the Site URL:
 
 ```text
-https://domivaultapp.com
+https://www.domivaultapp.com
 ```
 
 Add redirect URLs:
@@ -269,34 +281,33 @@ http://localhost:3000/auth/callback
 http://localhost:3005/auth/callback
 http://localhost:3000/auth/update-password
 http://localhost:3005/auth/update-password
-https://domivaultapp.com/auth/callback
-https://domivaultapp.com/auth/update-password
+https://www.domivaultapp.com/auth/callback
+https://www.domivaultapp.com/auth/update-password
 ```
 
 Password recovery should resolve to:
 
 ```text
-https://domivaultapp.com/auth/update-password
+https://www.domivaultapp.com/auth/update-password
 ```
 
 ## Google OAuth Setup
 
 For Google sign-in:
 
-1. Verify `domivaultapp.com` in Google Search Console.
+1. Verify `domivaultapp.com` and `www.domivaultapp.com` in Google Search Console.
 2. Add `domivaultapp.com` as an authorized domain in Google Cloud.
 3. Set OAuth consent links:
 
 ```text
-Home page: https://domivaultapp.com
-Privacy policy: https://domivaultapp.com/privacy
-Terms of service: https://domivaultapp.com/terms
+Home page: https://www.domivaultapp.com
+Privacy policy: https://www.domivaultapp.com/privacy
+Terms of service: https://www.domivaultapp.com/terms
 ```
 
 4. Add JavaScript origins:
 
 ```text
-https://domivaultapp.com
 https://www.domivaultapp.com
 ```
 
@@ -317,7 +328,7 @@ https://odxobincteposdhqhxvs.supabase.co/auth/v1/callback
 3. Set the production domain:
 
 ```text
-https://domivaultapp.com
+https://www.domivaultapp.com
 ```
 
 4. Configure Route 53 DNS records for Vercel:
@@ -380,20 +391,24 @@ DomiVault uses a Free vs. DomiVault Plus model. Plus access is represented by bi
 | Vehicle maintenance records | Locked | Included |
 | Maintenance history | Locked | Included |
 | Google Calendar sync | Locked | Included |
+| Renewal reminders | Locked | Included |
 | CSV/PDF report exports | Locked | Included |
 
 Recommended RevenueCat setup:
 
 1. Create a RevenueCat project named `DomiVault`.
 2. Create an entitlement named `premium_access`.
-3. Create monthly and yearly DomiVault Plus products.
-4. Attach both products to `premium_access`.
-5. Create and publish the current offering.
+3. Create monthly, yearly, and lifetime DomiVault Plus products.
+4. Attach all products to `premium_access`.
+5. Create and publish the current offering with:
+   - Monthly: `$9.99`
+   - Yearly: `$79.99`
+   - Lifetime: `$99.99`
 6. Add `NEXT_PUBLIC_REVENUECAT_API_KEY` and `NEXT_PUBLIC_REVENUECAT_ENTITLEMENT_ID`.
 7. Configure webhooks:
 
 ```text
-https://domivaultapp.com/api/billing/revenuecat
+https://www.domivaultapp.com/api/billing/revenuecat
 ```
 
 8. Store webhook auth/signing secrets in Vercel.
@@ -441,6 +456,22 @@ Recommended upload flow:
 - Production email/SMS reminder delivery.
 - Expanded analytics for annual home cost forecasting.
 - Admin-quality observability dashboards for production support.
+
+## Google Play And PWA Packaging
+
+DomiVault is prepared as a PWA and Android Trusted Web Activity for Google Play distribution.
+
+| Item | Value |
+| --- | --- |
+| Production URL | `https://www.domivaultapp.com` |
+| Android package name | `com.domivaultapp.mobile` |
+| Manifest | `public/manifest.json` |
+| Digital Asset Links | `public/.well-known/assetlinks.json` |
+| Service worker | `public/sw.js` |
+| Current Android TWA workspace | `C:\Users\Liv\domivault-twa-v3` |
+| Release bundle output | `C:\Users\Liv\domivault-twa-v3\app\release\app-release.aab` |
+
+Before each Google Play upload, confirm the Android version code is unique, the signing certificate matches Play Console, and Digital Asset Links uses the same package name and signing certificate SHA-256 fingerprint.
 
 ## License
 
