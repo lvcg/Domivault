@@ -1,3 +1,19 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+
+Disallow: /api/
+Disallow: /auth/
+Disallow: /oauth/
+Disallow: /login
+Disallow: /dashboard/
+Disallow: /expenses/
+Disallow: /maintenance/
+Disallow: /appliances/
+Disallow: /vendors/
+Disallow: /projects/
+Disallow: /vehicles/
+Disallow: /scanner/
+Disallow: /reports/
+Disallow: /settings/
+
+Sitemap: https://www.domivaultapp.com/sitemap.xml

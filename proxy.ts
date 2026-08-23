@@ -47,6 +47,25 @@ function setSecurityHeaders(response: NextResponse, nonce: string) {
   return response;
 }
 
+function shouldNoIndex(pathname: string) {
+  return (
+    isProtectedPath(pathname) ||
+    pathname === "/login" ||
+    pathname.startsWith("/login/") ||
+    pathname.startsWith("/auth/") ||
+    pathname.startsWith("/oauth/") ||
+    pathname.startsWith("/api/")
+  );
+}
+
+function setSeoHeaders(response: NextResponse, pathname: string) {
+  if (shouldNoIndex(pathname)) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+  }
+
+  return response;
+}
+
 export async function proxy(request: NextRequest) {
   const nonce = createNonce();
   const requestHeaders = new Headers(request.headers);
@@ -58,6 +77,7 @@ export async function proxy(request: NextRequest) {
     },
   });
   setSecurityHeaders(response, nonce);
+  setSeoHeaders(response, request.nextUrl.pathname);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -79,6 +99,7 @@ export async function proxy(request: NextRequest) {
           },
         });
         setSecurityHeaders(response, nonce);
+        setSeoHeaders(response, request.nextUrl.pathname);
         response.cookies.set({ name, value, ...options });
       },
       remove(name: string, options: CookieOptions) {
@@ -89,6 +110,7 @@ export async function proxy(request: NextRequest) {
           },
         });
         setSecurityHeaders(response, nonce);
+        setSeoHeaders(response, request.nextUrl.pathname);
         response.cookies.set({ name, value: "", ...options });
       },
     },
@@ -99,7 +121,7 @@ export async function proxy(request: NextRequest) {
   if (!user) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", request.nextUrl.pathname);
-    return setSecurityHeaders(NextResponse.redirect(loginUrl), nonce);
+    return setSeoHeaders(setSecurityHeaders(NextResponse.redirect(loginUrl), nonce), request.nextUrl.pathname);
   }
 
   return response;

@@ -6,9 +6,21 @@ import { DomiVaultUserProvider } from "@/components/auth/domivault-user-provider
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
 
 export const metadata: Metadata = {
-  title: "Domivault | Home Command Center and Records Vault",
-  description: "Domivault helps homeowners organize expenses, maintenance, appliances, warranties, vendors, vehicle records, receipts, and documents.",
+  metadataBase: new URL("https://www.domivaultapp.com"),
+  title: {
+    default: "DomiVault | Home Command Center and Records Vault",
+    template: "%s | DomiVault",
+  },
+  description: "DomiVault helps homeowners organize expenses, maintenance, appliances, warranties, vendors, vehicle records, receipts, and documents.",
   manifest: "/manifest.json",
+  applicationName: "DomiVault",
+  authors: [{ name: "DomiVault" }],
+  creator: "DomiVault",
+  publisher: "DomiVault",
+  robots: {
+    index: true,
+    follow: true,
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

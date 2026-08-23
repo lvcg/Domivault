@@ -1,4 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description:
+    "Read the DomiVault Privacy Policy for details about account data, home records, document storage, permissions, security, analytics, and user privacy rights.",
+  alternates: {
+    canonical: "https://www.domivaultapp.com/privacy",
+  },
+};
 
 type PrivacySection = {
   title: string;

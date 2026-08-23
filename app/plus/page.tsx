@@ -1,6 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { BellRing, CalendarCheck, Car, FileScan, FileText, Refrigerator, ShieldCheck } from "lucide-react";
 import { DomiVaultPaywall } from "@/components/billing/domivault-paywall";
+
+export const metadata: Metadata = {
+  title: "DomiVault Plus",
+  description:
+    "Upgrade to DomiVault Plus for receipt and warranty storage, OCR scan extraction, warranty alerts, vehicle records, Google Calendar sync, reminders, and report exports.",
+  alternates: {
+    canonical: "https://www.domivaultapp.com/plus",
+  },
+};
 
 const plusFeatures = [
   {

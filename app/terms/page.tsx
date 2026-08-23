@@ -1,4 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description:
+    "Read the DomiVault Terms of Service for app usage, subscriptions, refunds, limitations, arbitration, and United States availability.",
+  alternates: {
+    canonical: "https://www.domivaultapp.com/terms",
+  },
+};
 
 type TermsSection = {
   title: string;

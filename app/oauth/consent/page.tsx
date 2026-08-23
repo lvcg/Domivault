@@ -1,5 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Home, ShieldCheck } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "OAuth Consent Preview",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
+};
 
 const permissions = [
   "Create and update your DomiVault profile",
