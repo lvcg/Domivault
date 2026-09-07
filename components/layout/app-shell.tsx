@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarCheck, Car, ClipboardList, FileQuestion, FileText, Gauge, Home, LogIn, LogOut, Menu, Refrigerator, ReceiptText, ScanLine, Settings, ShieldCheck, Sparkles, UsersRound, X } from "lucide-react";
+import { BookOpen, CalendarCheck, Car, ClipboardList, FileQuestion, FileText, Gauge, Home, LogIn, LogOut, Menu, Refrigerator, ReceiptText, ScanLine, Settings, ShieldCheck, Sparkles, UsersRound, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatTimestamp } from "@/lib/utils";
 import { useDomiVaultUser } from "@/components/auth/domivault-user-provider";
@@ -21,6 +21,7 @@ const navigation = [
   { label: "Scanner", href: "/scanner", icon: ScanLine, plus: true },
   { label: "Reports", href: "/reports", icon: FileText, plus: true },
   { label: "DomiVault Plus", href: "/plus", icon: Sparkles },
+  { label: "Blog", href: "/blog", icon: BookOpen },
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "FAQ", href: "/faq", icon: FileQuestion },
   { label: "Login / Signup", href: "/login", icon: LogIn },
