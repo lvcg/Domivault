@@ -115,7 +115,7 @@ export default function HomePage() {
                       <Icon className="size-5" aria-hidden="true" />
                     </span>
                     <h3 className="mt-4 text-base font-semibold text-slate-950 dark:text-white">{feature.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{feature.description}</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-100">{feature.description}</p>
                   </article>
                 );
               })}
