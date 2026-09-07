@@ -23,7 +23,7 @@ export default function BlogPage() {
             </span>
             <span>
               <span className="block text-base font-semibold tracking-tight">DomiVault</span>
-              <span className="block text-xs font-medium text-slate-500 dark:text-slate-400">Home records blog</span>
+              <span className="block text-xs font-medium text-slate-700">Home records blog</span>
             </span>
           </Link>
           <div className="flex flex-1 flex-wrap items-center justify-end gap-2 text-sm font-semibold">
@@ -50,21 +50,21 @@ export default function BlogPage() {
 
         <section className="grid gap-4 pb-12 md:grid-cols-2 xl:grid-cols-3">
           {blogArticles.map((article) => (
-            <article key={article.slug} className="flex min-h-[22rem] flex-col rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-white/8">
+            <article key={article.slug} className="flex min-h-[22rem] flex-col rounded-[1.5rem] border border-slate-200 bg-white p-5 text-slate-950 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-200 dark:bg-white dark:text-slate-950">
               <div className="flex items-center justify-between gap-3">
                 <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-200">
                   {article.category}
                 </span>
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{article.readingTime}</span>
+                <span className="text-xs font-medium text-slate-950">{article.readingTime}</span>
               </div>
 
-              <BookOpen className="mt-7 size-8 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
-              <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">{article.title}</h2>
-              <p className="mt-3 line-clamp-4 text-sm leading-6 text-slate-600 dark:text-slate-300">{article.description}</p>
+              <BookOpen className="mt-7 size-8 text-emerald-600" aria-hidden="true" />
+              <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">{article.title}</h2>
+              <p className="mt-3 line-clamp-4 text-sm leading-6 text-slate-950">{article.description}</p>
 
               <div className="mt-5 flex flex-wrap gap-2">
                 {article.keywords.slice(0, 3).map((keyword) => (
-                  <span key={keyword} className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500 dark:border-white/10 dark:text-slate-400">
+                  <span key={keyword} className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-950">
                     {keyword}
                   </span>
                 ))}

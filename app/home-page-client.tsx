@@ -127,7 +127,7 @@ export default function HomePage() {
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-300">Free and Plus</p>
             <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white">Start with core home tracking, then unlock advanced vault features.</h2>
-            <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">
+            <p className="mt-3 leading-7 text-slate-950">
               Free accounts can use the core dashboard, expenses, projects, maintenance planning, vendors, and settings. DomiVault Plus adds premium storage, automation, export, and advanced tracking tools.
             </p>
           </div>
