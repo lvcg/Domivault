@@ -110,12 +110,12 @@ export default function HomePage() {
                 const Icon = feature.icon;
 
                 return (
-                  <article key={feature.title} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md dark:border-white/10 dark:bg-white/8">
-                    <span className="grid size-11 place-items-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-200">
+                  <article key={feature.title} className="rounded-3xl border border-slate-200 bg-white p-4 text-slate-950 shadow-sm transition-all duration-200 hover:shadow-md dark:border-slate-200 dark:bg-white dark:text-slate-950">
+                    <span className="grid size-11 place-items-center rounded-2xl bg-emerald-50 text-emerald-700">
                       <Icon className="size-5" aria-hidden="true" />
                     </span>
-                    <h3 className="mt-4 text-base font-semibold text-slate-950 dark:text-white">{feature.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-950 dark:text-slate-100">{feature.description}</p>
+                    <h3 className="mt-4 text-base font-semibold text-slate-950">{feature.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-950">{feature.description}</p>
                   </article>
                 );
               })}
@@ -133,8 +133,8 @@ export default function HomePage() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {plusFeatures.map((feature) => (
-              <div key={feature} className="flex min-h-14 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 dark:border-white/10 dark:bg-white/8 dark:text-slate-200">
-                <ShieldCheck className="size-5 shrink-0 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
+              <div key={feature} className="flex min-h-14 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 dark:border-slate-200 dark:bg-white dark:text-slate-950">
+                <ShieldCheck className="size-5 shrink-0 text-emerald-600" aria-hidden="true" />
                 <span>{feature}</span>
               </div>
             ))}
